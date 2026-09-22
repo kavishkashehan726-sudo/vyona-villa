@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 170" fill="none" role="img" aria-label="VYONA — Weligama, Sri Lanka">
+  <g transform="translate(110 0) scale(0.8)" stroke="currentColor" stroke-linecap="round" color="#2B2A26">
+    <circle cx="50" cy="5" r="3.2" fill="currentColor" stroke="none"/>
+    <path d="M19 45 A 34 34 0 0 1 81 45" stroke-width="2.2"/>
+    <path d="M50 16 C 58.5 29, 58.5 52, 50 67 C 41.5 52, 41.5 29, 50 16 Z" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M50 25 C 46.2 36, 46.2 49, 50 59" stroke-width="1.2"/>
+  </g>
+  <text x="150" y="125" text-anchor="middle" fill="#2B2A26" font-family="'Cormorant Garamond', 'Cormorant', Garamond, serif" font-size="50" font-weight="500" letter-spacing="14">VYONA</text>
+  <text x="150" y="155" text-anchor="middle" fill="#2B2A26" font-family="'Jost', 'Helvetica Neue', Arial, sans-serif" font-size="11" letter-spacing="4.5">WELIGAMA · SRI LANKA</text>
+</svg>

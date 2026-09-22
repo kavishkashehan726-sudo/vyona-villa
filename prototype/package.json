@@ -1,0 +1,22 @@
+{
+  "name": "vyona-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Single-file HTML prototype of the VYONA public site",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --watch --serve"
+  },
+  "dependencies": {
+    "@fontsource/cormorant-garamond": "^5.1.0",
+    "@fontsource/jost": "^5.1.0",
+    "gsap": "^3.13.0",
+    "motion": "^12.23.0",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "sharp": "^0.34.0"
+  }
+}

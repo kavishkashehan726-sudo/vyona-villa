@@ -1,0 +1,17 @@
+# Development services for VYONA.
+# Phase 0 ships only the prototype builder; web/admin/api/postgres/redis arrive in Phase 1.
+services:
+  prototype:
+    image: node:22-alpine
+    working_dir: /app/prototype
+    volumes:
+      - .:/app
+      - prototype_node_modules:/app/prototype/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - PORT=5173
+    command: sh -c "npm install --no-audit --no-fund && npm run dev"
+
+volumes:
+  prototype_node_modules:

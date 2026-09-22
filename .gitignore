@@ -1,0 +1,19 @@
+# Client-owned media (not licensed for public distribution)
+images/
+template/
+
+# Build output (embeds client photos)
+.dist/
+prototype/.cache/
+
+node_modules/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# Playwright MCP scratch output
+.playwright-mcp/
