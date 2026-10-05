@@ -5,6 +5,50 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-05 — Phase 1 step 3: public site
+
+### Done
+
+- Every prototype section is ported to `apps/web` as server components, with the client's
+  feedback: hero copy and script, the new nav, the seven rooms in the new order with
+  `[icon] 1 - DHARA` titles, and Explore's three columns.
+- New pages: `/stay` (the client's Stay copy word for word, "In every room", "A room, and a
+  little more"), `/stay/[slug]` (photos, specs, booking calendar for that room, the other rooms,
+  `HotelRoom` JSON-LD), `/explore` and `/explore/{vyona,food,beyond}`, `/about` (placeholder
+  structure), `/gallery`, `/contact`, `/book` (`?room=` preselects) and `/book/[ref]` (status,
+  room, dates, guests and total; no guest name or email; noindex).
+- Photos: `pnpm media:import` turns `images/` into WebP plus a 24px placeholder on the `Media`
+  row; `/media/…` serves them. The prototype's blur-up loader is reused, not `next/image`.
+- The booking widget reads real nights from `/api/calendar` (state, price, min stay). The
+  confirm step is still a mock until step 4.
+- Every frontend-guide effect runs: 3D villa with GLSL water, Ken Burns hero, parallax and
+  unveils, liquid ripple, magnetic buttons, custom cursor, blur-up, and the `?lite=1` slider
+  fallback. The checklist in CLAUDE.md now lists both prototype and web files.
+- Favicon from the brand mark (`app/icon.svg`, thicker strokes so it reads at 16px).
+
+### Checked
+
+- Typecheck clean across the monorepo.
+- Playwright on all pages at 320, 390, 768, 1440 and 2560: no horizontal scroll, no console
+  errors or warnings. Room dialog, booking drawer, 3D canvas, `has-cursor` / `has-ripple`, and
+  the lite slider all work. Unknown room, pillar and booking ref return 404.
+
+### Problems hit
+
+- GSAP warned "target not found" on every page hero (no script, rail or dots there). The intro
+  now skips empty steps.
+- The footer squeezed into two columns on phones: the mobile nav's `.brand { grid-column: 2 }`
+  also matched the footer brand. Scoped to `.nav__inner`.
+- The nav's "Book your stay" label was ink on olive, because `.nav__links a` sets the colour.
+- three r186 dropped `PCFSoftShadowMap`; switched to `PCFShadowMap`.
+
+### Next
+
+Step 4: real holds from the confirm step (`holdRoom`), PayHere sandbox checkout and notify,
+the confirmation page and email, and hold expiry in the worker.
+
+---
+
 ## 2026-10-05 — Phase 1 step 2: pricing, availability, holds
 
 ### Done

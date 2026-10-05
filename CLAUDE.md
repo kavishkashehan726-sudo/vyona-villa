@@ -12,7 +12,7 @@ The full system is specified in [docs/booking-engine-spec.md](docs/booking-engin
 - **Phase 0 (done, client approved):** `prototype/`, a single-file HTML page, still live at the
   domain until the cut-over. It is frozen; it is the visual reference for the port, not edited.
 - **Phase 1 (current):** the real system in a pnpm + Turborepo monorepo. Build order:
-  1 scaffold ✓ · 2 core ✓ · 3 public site port · 4 booking +
+  1 scaffold ✓ · 2 core ✓ · 3 public site ✓ · 4 booking +
   PayHere · 5 admin · 6 Beds24 · 7 production. Client feedback lives in `client updates/`
   (gitignored) and is summarised under *Content decisions*.
 
@@ -34,6 +34,14 @@ The full system is specified in [docs/booking-engine-spec.md](docs/booking-engin
 ```
 apps/
   web/              Next 16 public site + public API as route handlers (:3000)
+    src/app/        pages: / /stay /stay/[slug] /explore /explore/[pillar] /about /gallery
+                    /contact /book /book/[ref]; api/calendar; media/[...path] serves .media/
+    src/components/ server sections (sections/*), Photo, Nav, Footer, BookBar, RoomDialog,
+                    Runtime (global effects, once) and PageEffects (per-page effects)
+    src/client/     the prototype's js/ ported to TS: booking, hero, motion, ripple, cursor,
+                    magnetic, villa3d + water, gallery, images, capability, store, boot
+    src/lib/        site.ts + media.ts (server only, Prisma); rooms, content, gallery, villa
+                    (pure data, safe in client code)
   admin/            Next 16 dashboard, admin.vyonaweligama.com (:3001)
   worker/           BullMQ worker: Beds24 sync, hold expiry, emails
 packages/
@@ -67,6 +75,7 @@ docker compose up                        # postgres, redis, mailpit + app (insta
                                          # web :3000 · admin :3001 · mailpit :8025
 docker compose run --rm sh pnpm typecheck   # also: test, build, db:migrate, db:studio
 timeout 20 docker logs --tail 100 vyona_villa-app-1   # `docker compose logs` hangs here
+docker compose run --rm sh pnpm media:import   # images/ → .media/*.webp + Media rows (also on start)
 ```
 
 Prototype (profile `prototype`):
@@ -132,6 +141,19 @@ elements, pointed-oval seed logo.
   locked with `SELECT … FOR UPDATE` for holds.
 - Logo: the redrawn SVG in `packages/ui/src/logo.tsx` until the official file arrives.
 - Client reference images are for layout only; use the real photos, with a slot for a beach shot.
+- Photos are not `next/image`: `media:import` makes WebP (1200px, q60, as the prototype) plus a
+  24px LQIP on the `Media` row, `/media/…` serves them with a one-year cache, and `Photo` renders
+  the prototype's blur-up `<img class="blur-img" data-img>`. Same CLS and blur, no optimiser on a
+  memory-tight VPS.
+- The mobile booking sheet is the prototype's own drawer (`[data-drawer]` in the layout), not
+  vaul. Book buttons are `<Link href="/book" data-open-booking>`: `client/booking.ts` intercepts
+  them in the capture phase, so without JS they still reach the /book page.
+- Pages are server components. The layout inlines `#vy-boot` (photos, room summaries, booking
+  settings) as JSON; client code reads it with `boot()` instead of fetching.
+- `Runtime` (in the layout) starts global effects once: images, cursor, magnetic, ripple, booking.
+  `PageEffects` goes last in each page and starts/stops hero, motion, gallery, map and the 3D
+  villa, so they rebind on client navigation.
+- Client components import from `@/lib/rooms`, never `@/lib/site` (which pulls in Prisma).
 
 ## Content decisions
 
@@ -147,27 +169,31 @@ elements, pointed-oval seed logo.
   little more": use the client's copy word for word (in `client updates/`). About has no copy yet.
 - Prototype only: seven element rooms including Vyoma at placeholder prices $85–$140.
 - Currency: USD by default, LKR toggle at a flat `LKR_PER_USD = 300` (placeholder rate).
-- Booking is a mock: availability comes from a deterministic FNV hash of the date, so the calendar
-  looks realistic and stays stable between reloads. Nightly rate +20% Dec–Mar, +12% Fri/Sat;
-  10% service charge; 10% off at 7+ nights; 15-minute hold on the confirm step.
+- Prototype booking is a mock (FNV hash of the date). In `apps/web` the calendar is real:
+  `/api/calendar` returns each night's state, price and min stay from `packages/core`. Nightly rate
+  +20% Dec–Mar, +12% Fri/Sat; 10% service charge; 10% off at 7+ nights; 15-minute hold. The
+  confirm step is still a mock until step 4 (it marks the nights booked in that tab only).
+- About and the Explore pillar pages carry draft or placeholder copy, marked on the page.
 - Contact details, address and social handles are placeholders, marked on the page.
 
-## Frontend guide checklist (all live in the prototype)
+## Frontend guide checklist (live in the prototype and in `apps/web`)
 
-| Guide item | Where |
-|---|---|
-| 3D villa, orbit limits (polar π/4–π/2.1, distance 8–25, no pan) | `js/villa3d.js` |
-| Raycast hover glow + "✨ Name · Tap to inspect" tag, click → camera fly + info card | `js/villa3d.js` |
-| Custom GLSL water (waves, fresnel, caustics, sun glint, hover glow) | `js/water.*.glsl` |
-| Cinematic hero (Ken Burns cross-fade, `<video>` slot kept for later) | `js/hero.js` |
-| Deep parallax + scroll masking (scaleY unveils) | `js/motion.js`, `.unveil` in CSS |
-| Liquid hover: one shared WebGL canvas moved over the hovered image | `js/ripple.js` |
-| Magnetic buttons (pull /3, spring 150/15/0.1) + custom cursor | `js/magnetic.js`, `js/cursor.js` |
-| Blur-up loading, fixed aspect boxes (low CLS) | `js/images.js`, `.blur-img` |
-| Capability check → photo-slider fallback, no ripple/cursor | `js/capability.js` (`?lite=1` / `?full=1`) |
-| Transform/opacity-only animation, reduced motion respected | throughout |
-| SEO meta + JSON-LD `LodgingBusiness` | `index.html` |
-| Draco pipeline for the real `.glb` | documented in README, not used yet |
+Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/client/`.
+
+| Guide item | Prototype | apps/web |
+|---|---|---|
+| 3D villa, orbit limits (polar π/4–π/2.1, distance 8–25, no pan) | `villa3d.js` | `villa3d.ts` (dynamic import) |
+| Raycast hover glow + "✨ Name · Tap to inspect" tag, click → camera fly + info card | `villa3d.js` | `villa3d.ts` |
+| Custom GLSL water (waves, fresnel, caustics, sun glint, hover glow) | `water.*.glsl` | `water.ts` |
+| Cinematic hero (Ken Burns cross-fade, `<video>` slot kept for later) | `hero.js` | `hero.ts`, `sections/Hero.tsx` |
+| Deep parallax + scroll masking (scaleY unveils) | `motion.js` | `motion.ts`, `.unveil` |
+| Liquid hover: one shared WebGL canvas moved over the hovered image | `ripple.js` | `ripple.ts` |
+| Magnetic buttons (pull /3, spring 150/15/0.1) + custom cursor | `magnetic.js`, `cursor.js` | same, `.ts` |
+| Blur-up loading, fixed aspect boxes (low CLS) | `images.js` | `images.ts`, `components/Photo.tsx` |
+| Capability check → photo-slider fallback, no ripple/cursor | `capability.js` | `capability.ts` (`?lite=1` / `?full=1`) |
+| Transform/opacity-only animation, reduced motion respected | throughout | throughout |
+| SEO meta + JSON-LD `LodgingBusiness` / `HotelRoom` | `index.html` | `app/layout.tsx`, `app/stay/[slug]` |
+| Draco pipeline for the real `.glb` | README, not used yet | not used yet |
 
 ## Gotchas
 
@@ -187,6 +213,14 @@ elements, pointed-oval seed logo.
   `packages/db/src/generated` (gitignored), and it connects through `@prisma/adapter-pg`.
 - BullMQ 6 needs a constructed ioredis client (`createRedis()` in core), not connection options.
 - Next 16: `middleware` is now `proxy.ts`, and route params are async.
+- The nav is fixed and the hero has `margin-top: var(--nav-h)`. A page without a hero starts
+  with `<div className="page-top" />` or its top sits under the nav.
+- Mobile-nav rules must be scoped to `.nav__inner`: a bare `.brand { grid-column: 2 }` also hit
+  the footer brand and pushed the footer into two cramped columns.
+- `.nav__links a` sets the link colour, so the nav's olive button needs its own `color` rule.
+- GSAP warns "target not found" for every empty selector. Page heroes lack the home hero's
+  script, rail and dots, so `initHero` skips intro steps with nothing to animate.
+- three r186 removed `PCFSoftShadowMap` (it falls back with a warning); use `PCFShadowMap`.
 
 - `aspect-ratio` does nothing on an inline element — the room card image wrapper is a `<span>` and
   needs `display: block`.

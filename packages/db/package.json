@@ -11,6 +11,7 @@
     "migrate": "prisma migrate dev",
     "migrate:deploy": "prisma migrate deploy",
     "seed": "tsx src/seed.ts",
+    "media:import": "tsx src/media-import.ts",
     "studio": "prisma studio --port 5555 --browser none",
     "typecheck": "tsc --noEmit"
   },
@@ -23,6 +24,7 @@
     "@types/node": "^24.0.0",
     "@types/pg": "^8.23.1",
     "prisma": "^7.10.0",
+    "sharp": "^0.35.5",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   }

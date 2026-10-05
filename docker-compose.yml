@@ -35,7 +35,7 @@ services:
     ports:
       - "3000:3000"
       - "3001:3001"
-    command: sh -c "pnpm install && pnpm db:deploy && pnpm db:seed && pnpm dev"
+    command: sh -c "pnpm install && pnpm db:deploy && pnpm db:seed && pnpm media:import && pnpm dev"
 
   # One-off commands: docker compose run --rm sh pnpm test
   sh:

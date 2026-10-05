@@ -16,7 +16,8 @@
     "db:migrate": "pnpm --filter @vyona/db run migrate",
     "db:deploy": "pnpm --filter @vyona/db run migrate:deploy",
     "db:seed": "pnpm --filter @vyona/db run seed",
-    "db:studio": "pnpm --filter @vyona/db run studio"
+    "db:studio": "pnpm --filter @vyona/db run studio",
+    "media:import": "pnpm --filter @vyona/db run media:import"
   },
   "devDependencies": {
     "turbo": "^2.11.7",
