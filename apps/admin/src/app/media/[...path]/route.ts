@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
+// The same files the public site serves (apps/web/src/app/media), for thumbnails here.
 // Photos live in a Docker volume (MEDIA_DIR), not in the image or the repo.
 // Names never change once written, so browsers and Cloudflare cache them for a year.
 

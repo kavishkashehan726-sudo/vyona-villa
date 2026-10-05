@@ -4,7 +4,7 @@
 import { JOB, QUEUE, createRedis, expireHolds, queue } from '@vyona/core';
 import { prisma } from '@vyona/db';
 import { Worker, type Job } from 'bullmq';
-import { sendGuestConfirmation, sendOwnerBooking, sendOwnerRefund } from './mail';
+import { sendGuestCancellation, sendGuestConfirmation, sendOwnerBooking, sendOwnerRefund } from './mail';
 
 type Data = { reservationId: string; orderId: string };
 
@@ -14,6 +14,7 @@ const handlers: Record<string, (data: Data) => Promise<unknown>> = {
     return n ? `expired ${n} hold${n === 1 ? '' : 's'}` : 'nothing to expire';
   },
   [JOB.guestConfirmation]: (d) => sendGuestConfirmation(d.reservationId),
+  [JOB.guestCancellation]: (d) => sendGuestCancellation(d.reservationId),
   [JOB.ownerBooking]: (d) => sendOwnerBooking(d.reservationId),
   [JOB.ownerRefund]: (d) => sendOwnerRefund(d.reservationId, d.orderId),
 };

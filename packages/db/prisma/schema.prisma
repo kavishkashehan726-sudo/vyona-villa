@@ -109,7 +109,8 @@ model Reservation {
   phone       String?
   country     String?
   arrivalTime String?
-  notes       String?
+  notes       String? // from the guest
+  ownerNotes  String? // the owner's own, never shown to the guest
   currency    String            @default("USD")
   total       Int // cents
   breakdown   Json // nightly prices, discount, service charge
@@ -174,9 +175,23 @@ model AdminUser {
   id           String    @id @default(cuid())
   email        String    @unique
   name         String
-  passwordHash String
+  passwordHash String // scrypt, see src/password.ts
   lastLoginAt  DateTime?
   createdAt    DateTime  @default(now())
+
+  sessions AdminSession[]
+}
+
+// A signed-in browser. The cookie holds a random token; only its SHA-256 is
+// stored, so a leaked database can't be replayed as a login.
+model AdminSession {
+  id        String    @id // sha256(token), hex
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Key/value settings the owner edits in the admin (service charge, LKR rate...).

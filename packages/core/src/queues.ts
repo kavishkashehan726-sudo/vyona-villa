@@ -20,8 +20,14 @@ export const JOB = {
   ownerBooking: 'email-owner-booking',
   /** ops: { reservationId, orderId } → a paid booking that could not be confirmed. */
   ownerRefund: 'email-owner-refund',
-  /** sync: { reservationId } → create the booking in Beds24 (step 6). */
+  /** ops: { reservationId } → tells the guest the owner cancelled their booking. */
+  guestCancellation: 'email-guest-cancellation',
+  /** sync: { reservationId } → create or update the booking in Beds24 (step 6). */
   beds24Booking: 'beds24-booking',
+  /** sync: { reservationId } → cancel the booking in Beds24 (step 6). */
+  beds24Cancel: 'beds24-cancel',
+  /** sync: { roomIds?, from?, until? } → push prices and availability; no fields = everything (step 6). */
+  beds24Ari: 'beds24-ari',
 } as const;
 
 // BullMQ 6 treats ioredis as optional and, under native ESM, wants a client
@@ -71,4 +77,34 @@ export async function afterConfirm(reservationId: string) {
 /** Tells the owner a guest paid for nights that were no longer free. */
 export async function needsRefund(reservationId: string, orderId: string) {
   await queue(QUEUE.ops).add(JOB.ownerRefund, { reservationId, orderId }, once(`refund-${orderId}`));
+}
+
+/* ------------------------------------------------------------- the owner */
+
+const sync = { attempts: 3, backoff: { type: 'exponential', delay: 30_000 }, removeOnComplete: 500, removeOnFail: 500 } as const;
+
+/** A booking the owner entered by hand: close the nights on Booking.com, and email the guest if asked. */
+export async function afterManualBooking(reservationId: string, emailGuest: boolean) {
+  await Promise.all([
+    queue(QUEUE.sync).add(JOB.beds24Booking, { reservationId }, once(`b24-${reservationId}`)),
+    emailGuest && queue(QUEUE.ops).add(JOB.guestConfirmation, { reservationId }, once(`guest-${reservationId}`)),
+  ]);
+}
+
+/** The owner moved a booking to other dates or another room. */
+export async function afterMove(reservationId: string) {
+  await queue(QUEUE.sync).add(JOB.beds24Booking, { reservationId }, sync);
+}
+
+/** The owner cancelled a booking: reopen its nights on Booking.com and tell the guest if asked. */
+export async function afterCancel(reservationId: string, emailGuest: boolean) {
+  await Promise.all([
+    queue(QUEUE.sync).add(JOB.beds24Cancel, { reservationId }, { ...once(`b24-cancel-${reservationId}`), attempts: 3 }),
+    emailGuest && queue(QUEUE.ops).add(JOB.guestCancellation, { reservationId }, once(`cancel-${reservationId}`)),
+  ]);
+}
+
+/** Prices or availability changed: blocks, overrides, rates or settings. Omit the range for everything. */
+export async function afterRatesChange(range?: { roomIds: string[]; from: string; until: string }) {
+  await queue(QUEUE.sync).add(JOB.beds24Ari, range ?? {}, sync);
 }

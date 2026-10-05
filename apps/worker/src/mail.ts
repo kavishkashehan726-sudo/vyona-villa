@@ -7,6 +7,7 @@ import nodemailer from 'nodemailer';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 const FROM = process.env.MAIL_FROM || 'VYONA Weligama <stay@vyonaweligama.com>';
+const ADMIN_URL = process.env.ADMIN_URL ?? 'http://localhost:3001';
 const OWNER = process.env.ADMIN_EMAIL?.trim();
 
 const transport = nodemailer.createTransport(process.env.SMTP_URL ?? 'smtp://localhost:1025');
@@ -37,7 +38,7 @@ async function booking(reservationId: string) {
     : villa
       ? `To pay at the villa on arrival: ${money(villa.amount, villa.currency)}`
       : 'Not paid yet';
-  return { r, nights, payment, link: `${SITE_URL}/book/${r.ref}` };
+  return { r, nights, payment, link: `${SITE_URL}/book/${r.ref}`, desk: `${ADMIN_URL}/reservations/${r.id}` };
 }
 
 type Row = [label: string, value: string];
@@ -74,6 +75,7 @@ const button = (href: string, label: string) =>
 export async function sendGuestConfirmation(reservationId: string) {
   const [{ r, nights, payment, link }, settings] = await Promise.all([booking(reservationId), loadSettings()]);
   if (r.status !== 'CONFIRMED') return `skipped: ${r.ref} is ${r.status}`;
+  if (!r.email) return `skipped: ${r.ref} has no email address`;
   const first = r.guestName.trim().split(/\s+/)[0];
   const { html, text } = layout(
     'See you in Weligama.',
@@ -101,9 +103,38 @@ export async function sendGuestConfirmation(reservationId: string) {
   return `sent to guest for ${r.ref}`;
 }
 
+export async function sendGuestCancellation(reservationId: string) {
+  const { r, nights } = await booking(reservationId);
+  if (r.status !== 'CANCELLED') return `skipped: ${r.ref} is ${r.status}`;
+  if (!r.email) return `skipped: ${r.ref} has no email address`;
+  const first = r.guestName.trim().split(/\s+/)[0];
+  const paid = r.payments.find((p) => p.status === 'PAID');
+  const { html, text } = layout(
+    'Your booking is cancelled.',
+    `${esc(first)}, your stay at VYONA has been cancelled.`,
+    [
+      ['Reference', r.ref],
+      ['Room', r.room.name],
+      ['Dates', `${dateFmt.format(r.checkIn)} → ${dateFmt.format(r.checkOut)}`],
+      ['Nights', String(nights)],
+      ...(paid ? ([['Refund', `${money(paid.amount, paid.currency)} to the card you paid with`]] as Row[]) : []),
+    ],
+    `${paid ? 'Refunds usually reach your card within 5 to 10 working days. ' : ''}If this is a surprise, or you’d like new dates, just reply to this email.`,
+  );
+  await transport.sendMail({
+    from: FROM,
+    to: { name: r.guestName, address: r.email },
+    replyTo: OWNER || undefined,
+    subject: `Your VYONA booking is cancelled · ${r.ref}`,
+    html,
+    text,
+  });
+  return `cancellation sent to guest for ${r.ref}`;
+}
+
 export async function sendOwnerBooking(reservationId: string) {
   if (!OWNER) return 'skipped: ADMIN_EMAIL is not set';
-  const { r, nights, payment, link } = await booking(reservationId);
+  const { r, nights, payment, desk } = await booking(reservationId);
   const { html, text } = layout(
     `New booking ${r.ref}`,
     `${esc(r.guestName)} booked ${esc(r.room.name)} for ${nights} night${nights === 1 ? '' : 's'}.`,
@@ -120,7 +151,7 @@ export async function sendOwnerBooking(reservationId: string) {
       ['Total', money(r.total, r.currency)],
       ['Payment', payment],
     ],
-    button(link, 'Open booking'),
+    button(desk, 'Open booking'),
   );
   await transport.sendMail({
     from: FROM,
@@ -134,7 +165,7 @@ export async function sendOwnerBooking(reservationId: string) {
 }
 
 export async function sendOwnerRefund(reservationId: string, orderId: string) {
-  const { r, link } = await booking(reservationId);
+  const { r, desk } = await booking(reservationId);
   const p = await prisma.payment.findUnique({ where: { orderId } });
   const rows: Row[] = [
     ['Reference', r.ref],
@@ -152,7 +183,7 @@ export async function sendOwnerRefund(reservationId: string, orderId: string) {
     console.error(`REFUND NEEDED ${r.ref} (order ${orderId}); ADMIN_EMAIL is not set`);
     return 'skipped: ADMIN_EMAIL is not set';
   }
-  const { html, text } = layout(`Refund needed: ${r.ref}`, intro, rows, button(link, 'Open booking'));
+  const { html, text } = layout(`Refund needed: ${r.ref}`, intro, rows, button(desk, 'Open booking'));
   await transport.sendMail({ from: FROM, to: OWNER, subject: `Refund needed: ${r.ref} (${orderId})`, html, text });
   return `refund alert sent for ${r.ref}`;
 }

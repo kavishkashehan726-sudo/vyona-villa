@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./password": "./src/password.ts",
+    "./media-data": "./src/media-data.ts",
+    "./photo": "./src/photo.ts"
   },
   "scripts": {
     "generate": "prisma generate",
@@ -18,13 +21,13 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "@types/pg": "^8.23.1",
     "prisma": "^7.10.0",
-    "sharp": "^0.35.5",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   }

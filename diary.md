@@ -5,6 +5,87 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-05 — Phase 1 step 5: admin
+
+### Done
+
+- **Sign-in:** custom sessions instead of Auth.js (`packages/core/src/auth.ts`). The cookie
+  holds a random token and the `AdminSession` table holds its SHA-256, so a database copy can't
+  log anyone in. Sessions last 14 days and end on sign-out or a password change. scrypt hashes
+  (`packages/db/src/password.ts`). An unknown email takes as long as a wrong password. Five
+  failures per email or per IP in 15 minutes lock both out (`lib/throttle.ts`). `proxy.ts` is a
+  cheap cookie gate; `requireAdmin()` checks the session on every page and action.
+- **Calendar** (`/`): rooms × 42 nights, four weeks per step, plus a date jump. It shows
+  bookings by source, holds, closed nights, custom prices and minimum stays. Today's line
+  links to arrivals, departures, in-house guests, guests paying now and refunds due. Select
+  nights with a drag or shift-click (mouse), two taps (touch) or Enter and the arrow keys. Then
+  close or open them, set a price or a minimum stay, or clear them. Esc closes the panel.
+- **Bookings:** nine views (upcoming, arriving today, in house, leaving today, awaiting
+  payment, to refund, cancelled, past, all) and a search. The detail page shows the stay, the price breakdown,
+  the guest with mailto, tel and WhatsApp links, payments, notes only the owner sees, and the
+  guest's editable details. Move changes the dates or room, keeping the price, repricing, or
+  taking a custom total. Cancel can email the guest. A manual booking can email a confirmation.
+- **Rates:** base rate per room, plus season and weekday rules with month chips.
+- **Settings:** service charge, long-stay discount and its threshold, LKR rate, hold minutes,
+  `payAtVilla`, and a password change.
+- **Photos:** upload (JPEG, PNG or WebP up to 15 MB, converted like `media:import`), alt text,
+  per-room order, cover and removal, and deleting a photo from the library. On mobile the
+  room strip scrolls sideways.
+- **Core:** `admin.ts` (grid, `setNights`, manual booking, move, cancel, admin quote) and
+  `nights.ts` (locking shared with `holdRoom`). New queue helpers `afterManualBooking`,
+  `afterMove`, `afterCancel` and `afterRatesChange` prepare for Beds24. The worker sends a
+  cancellation email, and owner emails link to the booking in the admin (`ADMIN_URL`).
+- **DB:** migration `admin_sessions` (`AdminSession`, `Reservation.ownerNotes`). The seed
+  creates photos only if missing and never overwrites the owner's order. `media:import` keeps
+  files that were replaced through the admin. `convertPhoto` is shared by both.
+
+### Checked
+
+- Typecheck clean. Core tests 68/68, including:
+  - a manual booking can't take held or booked nights;
+  - a move can't land on another guest's nights but may overlap its own;
+  - a cancel frees the nights;
+  - sign-out ends the session, and a password change signs out the other browsers.
+- `next build` is clean for admin and web, with no Turbopack warnings.
+- Smoke test in Playwright and Mailpit:
+  - sign in with a bad and then a good password;
+  - close, price and reopen a range on the calendar;
+  - add a manual booking (with its confirmation email);
+  - move it (keep, reprice, custom), then cancel it (with its cancellation email);
+  - rates, with invalid input, a save, "no change", and adding and deleting a rule;
+  - settings, with an invalid value, a save, and changing and restoring the password;
+  - photos, with a bad file, upload, reorder, cover, alt text, remove and delete; the public
+    room page picked up the change;
+  - a `<script>` guest name shows escaped.
+- 390 px: no horizontal scroll on any admin page. The test data is cleaned up, with Tara's
+  photos restored.
+
+### Problems hit
+
+- React 19 resets a form after its action, which wiped input whenever the server rejected it.
+  `ActionForm` now submits from `onSubmit` inside `startTransition`.
+- Forms that disappear after their action (cancel, delete) lost their message. They now
+  redirect with `?saved=` and the page shows a banner.
+- Everything exported from a `'use server'` file becomes a callable endpoint, so helpers live
+  in `lib/`.
+- Next's route announcer also has `role="alert"`, so tests must scope to `.note`.
+- Turbopack traced the whole project from `path.resolve(process.env.MEDIA_DIR)`. Fixed with
+  `/*turbopackIgnore: true*/`.
+- `docker compose restart` doesn't re-read `.env`. Use `docker compose up -d app`.
+- Playwright MCP intercepts `confirm()` dialogs and stops the script, so accept the dialog
+  with `page.once('dialog')` before clicking.
+- The mobile table's grid let chips stretch and pushed sub-lines into the label column. It
+  now uses a padded gutter with absolutely placed labels.
+
+### Next
+
+- Step 6, Beds24: the adapter (a mock until the account exists), the push worker for the
+  queued jobs, the webhook and the 10-minute fallback sync.
+- The first admin comes from `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env` (gitignored). The
+  seed creates it once and never overwrites it, so a password changed in the admin survives.
+
+---
+
 ## 2026-10-05 — Phase 1 step 4: booking and PayHere
 
 ### Done

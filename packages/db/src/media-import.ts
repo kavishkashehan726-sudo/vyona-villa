@@ -1,16 +1,16 @@
-// Converts the client photos in images/ into the WebP files the site serves,
-// with the same recipe as the prototype build (prototype/build.mjs): at most
-// 1200px, quality 60, plus a 24px blurred placeholder stored on the Media row.
+// Converts the client photos in images/ into the WebP files the site serves
+// (recipe in photo.ts), with the placeholder stored on the Media row.
 //
-// Idempotent: a photo whose WebP and row both exist is skipped, so this runs on
-// every container start. Without images/ (CI, a fresh clone) it does nothing.
+// Idempotent: a photo whose row and file both exist is skipped, so this runs on
+// every container start. That includes photos the owner replaced in the admin,
+// whose rows point at a new file. Without images/ (CI, a fresh clone) it does nothing.
 
 import { existsSync } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import sharp from 'sharp';
 import { prisma } from './index';
 import { PHOTOS } from './media-data';
+import { convertPhoto } from './photo';
 
 const root = path.resolve(import.meta.dirname, '../../..');
 const source = process.env.IMAGES_DIR ?? path.join(root, 'images');
@@ -23,7 +23,7 @@ async function main() {
     return;
   }
   await mkdir(target, { recursive: true });
-  const existing = new Set((await prisma.media.findMany({ select: { key: true } })).map((m) => m.key));
+  const existing = new Map((await prisma.media.findMany({ select: { key: true, path: true } })).map((m) => [m.key, m.path]));
 
   let made = 0;
   let missing = 0;
@@ -31,7 +31,8 @@ async function main() {
     const input = path.join(source, file);
     const rel = `photos/${key}.webp`;
     const output = path.join(target, rel);
-    if (!force && existing.has(key) && existsSync(output)) continue;
+    const current = existing.get(key);
+    if (!force && current && existsSync(path.join(target, current))) continue;
     if (!existsSync(input)) {
       missing += 1;
       console.warn(`media: ${file} not found for ${key}`);
@@ -39,21 +40,10 @@ async function main() {
     }
 
     await mkdir(path.dirname(output), { recursive: true });
-    const base = sharp(input).rotate();
-    const info = await base
-      .clone()
-      .resize({ width: 1200, height: 1200, fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 60, effort: 5 })
-      .toFile(output);
-    const lqip = await base.clone().resize(24).blur(1.2).webp({ quality: 40 }).toBuffer();
+    const photo = await convertPhoto(input);
+    await writeFile(output, photo.webp);
 
-    const data = {
-      path: rel,
-      alt,
-      width: info.width,
-      height: info.height,
-      lqip: `data:image/webp;base64,${lqip.toString('base64')}`,
-    };
+    const data = { path: rel, alt, width: photo.width, height: photo.height, lqip: photo.lqip };
     await prisma.media.upsert({ where: { key }, create: { key, ...data }, update: data });
     made += 1;
   }

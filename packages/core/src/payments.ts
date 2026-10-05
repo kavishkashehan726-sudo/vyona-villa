@@ -5,7 +5,8 @@
 
 import { prisma, type Payment, type PaymentStatus, type Prisma, type Reservation } from '@vyona/db';
 import { BookingError } from './booking';
-import { dayOf, toIso } from './dates';
+import { dayOf } from './dates';
+import { expireStale, lockNights } from './nights';
 import { outcomeOf, payhereAmount, type PayHereNotify } from './payhere';
 import { loadSettings } from './settings';
 
@@ -13,28 +14,8 @@ type Tx = Prisma.TransactionClient;
 type Stay = Pick<Reservation, 'id' | 'roomId' | 'checkIn' | 'checkOut'>;
 
 /** Creates and locks the stay's RoomDay rows; returns who holds each night. */
-async function lockNights(tx: Tx, r: Stay, now: Date) {
-  const from = toIso(dayOf(r.checkIn));
-  const until = toIso(dayOf(r.checkOut));
-  await tx.$executeRaw`
-    INSERT INTO "RoomDay" ("roomId", "date", "updatedAt")
-    SELECT ${r.roomId}, d::date, now()
-    FROM generate_series(${from}::date, ${until}::date - 1, interval '1 day') AS d
-    ON CONFLICT DO NOTHING`;
-  await tx.$queryRaw`
-    SELECT 1 FROM "RoomDay"
-    WHERE "roomId" = ${r.roomId} AND "date" >= ${from}::date AND "date" < ${until}::date
-    ORDER BY "date"
-    FOR UPDATE`;
-  // A separate read, for the reason given in holdRoom.
-  return tx.$queryRaw<{ blocked: boolean; occupantId: string | null; live: boolean }[]>`
-    SELECT d.blocked, d."reservationId" AS "occupantId",
-           COALESCE(r.status = 'CONFIRMED' OR (r.status = 'HOLD' AND r."holdUntil" > ${now}), false) AS live
-    FROM "RoomDay" d
-    LEFT JOIN "Reservation" r ON r.id = d."reservationId"
-    WHERE d."roomId" = ${r.roomId} AND d."date" >= ${from}::date AND d."date" < ${until}::date
-    ORDER BY d."date"`;
-}
+const lockStay = (tx: Tx, r: Stay, now: Date) =>
+  lockNights(tx, [{ roomId: r.roomId, from: dayOf(r.checkIn), until: dayOf(r.checkOut) }], now);
 
 export type ConfirmResult = 'CONFIRMED' | 'ALREADY_CONFIRMED' | 'LOST';
 
@@ -44,7 +25,7 @@ export type ConfirmResult = 'CONFIRMED' | 'ALREADY_CONFIRMED' | 'LOST';
  * are taken back. LOST means another booking or a block has them.
  */
 async function confirmIn(tx: Tx, stay: Stay, now: Date): Promise<ConfirmResult> {
-  const nights = await lockNights(tx, stay, now);
+  const nights = await lockStay(tx, stay, now);
   const r = await tx.reservation.findUniqueOrThrow({ where: { id: stay.id }, select: { status: true } });
   if (r.status === 'CONFIRMED') return 'ALREADY_CONFIRMED';
   if (r.status === 'CANCELLED') return 'LOST';
@@ -52,10 +33,7 @@ async function confirmIn(tx: Tx, stay: Stay, now: Date): Promise<ConfirmResult> 
   const theirs = nights.filter((n) => n.occupantId !== stay.id);
   if (theirs.some((n) => n.blocked || n.live)) return 'LOST';
   if (theirs.length) {
-    const stale = [...new Set(theirs.flatMap((n) => (n.occupantId ? [n.occupantId] : [])))];
-    if (stale.length) {
-      await tx.reservation.updateMany({ where: { id: { in: stale }, status: 'HOLD' }, data: { status: 'EXPIRED' } });
-    }
+    await expireStale(tx, theirs, stay.id);
     await tx.roomDay.updateMany({
       where: { roomId: stay.roomId, date: { gte: stay.checkIn, lt: stay.checkOut } },
       data: { reservationId: stay.id },
@@ -112,7 +90,7 @@ export async function releaseHold(reservationId: string, now = new Date()): Prom
   const r = await prisma.reservation.findUnique({ where: { id: reservationId } });
   if (!r || r.status !== 'HOLD') return false;
   return prisma.$transaction(async (tx) => {
-    await lockNights(tx, r, now);
+    await lockStay(tx, r, now);
     const { count } = await tx.reservation.updateMany({
       where: { id: r.id, status: 'HOLD' },
       data: { status: 'EXPIRED', holdUntil: now },

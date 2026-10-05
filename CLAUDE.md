@@ -13,7 +13,7 @@ The full system is specified in [docs/booking-engine-spec.md](docs/booking-engin
   domain until the cut-over. It is frozen; it is the visual reference for the port, not edited.
 - **Phase 1 (current):** the real system in a pnpm + Turborepo monorepo. Build order:
   1 scaffold ✓ · 2 core ✓ · 3 public site ✓ · 4 booking +
-  PayHere ✓ · 5 admin · 6 Beds24 · 7 production. Client feedback lives in `client updates/`
+  PayHere ✓ · 5 admin ✓ · 6 Beds24 · 7 production. Client feedback lives in `client updates/`
   (gitignored) and is summarised under *Content decisions*.
 
 ## Hard rules
@@ -47,12 +47,24 @@ apps/
                     error responses, hold rate limit), payhere.ts (notify → queue);
                     rooms, content, gallery, villa (pure data, safe in client code)
   admin/            Next 16 dashboard, admin.vyonaweligama.com (:3001)
+    src/app/(desk)/ page.tsx (calendar), reservations (list, [id] + MoveForm, new), rates,
+                    photos, settings; each folder's actions.ts holds its server actions
+    src/app/        login/, media/[...path] (serves .media/), api/health, icon.svg
+    src/components/ ActionForm (+ Submit), Chart (calendar grid + selection panel),
+                    GuestFields, StayFields, JumpTo, Nav
+    src/lib/        session (requireAdmin, cookie), actions (attempt → Result), sync (queue
+                    calls), throttle (login lockout), format
+    src/proxy.ts    cookie gate; requireAdmin() does the real check
   worker/           BullMQ worker: hold expiry sweep (every minute), emails (mail.ts),
                     Beds24 sync (step 6)
 packages/
-  db/               Prisma 7 schema, migrations, idempotent seed (seed-data.ts = client brief)
+  db/               Prisma 7 schema, migrations, idempotent seed (seed-data.ts = client brief),
+                    password (scrypt), photo (convertPhoto: WebP + LQIP, shared by
+                    media:import and admin uploads)
   core/             pricing, availability, booking (hold), payments (pay, confirm, release,
-                    notify), payhere (hash, verify; pure), queues (names, afterConfirm)
+                    notify), payhere (hash, verify; pure), queues (names, afterConfirm,
+                    afterMove/Cancel/ManualBooking/RatesChange), nights (shared lock + expire),
+                    admin (grid, setNights, manual booking, move, cancel), auth (sessions)
   ui/               tokens.css (Tailwind 4 @theme), icons.tsx, logo.tsx (swap point for the
                     official logo)
 docker/             dev.Dockerfile
@@ -181,6 +193,24 @@ elements, pointed-oval seed logo.
 - Holds are rate-limited in memory: 8 per IP per 15 minutes (cf-connecting-ip first).
 - Emails go from the worker via nodemailer: guest confirmation, owner booking and owner refund,
   to `ADMIN_EMAIL`. Mailpit catches them in dev. Guest input is HTML-escaped.
+- **Admin auth is hand-rolled, not Auth.js** (`core/auth.ts`): a random token in an httpOnly
+  cookie (`vy_admin` in dev, `__Host-vy_admin` in production), only its SHA-256 in
+  `AdminSession`, 14 days, ended by sign-out or a password change. scrypt hashes. The first
+  admin is created once by the seed from `ADMIN_EMAIL`/`ADMIN_PASSWORD` and never overwritten.
+  Five failed sign-ins per email or IP in 15 minutes lock both out (in memory).
+- **Admin UI is hand-built CSS** on the shared tokens (`apps/admin/src/app/globals.css`), not
+  shadcn. Mobile tables become labelled cards; the photo strip scrolls sideways under 700px.
+- **ActionForm** submits from `onSubmit` in `startTransition`, not through the form's action,
+  so React 19's post-action reset doesn't wipe what the owner typed. A form that disappears
+  after its action (cancel, delete) redirects with `?saved=…` and the page shows the banner.
+- **Calendar selection:** drag or shift-click with a mouse, first and last night with two taps
+  on touch, Enter and the arrow keys from the keyboard; Esc closes the panel.
+- Owner changes queue Booking.com sync through `lib/sync`, which logs and swallows queue
+  errors: a save never fails because Redis is down, and the fallback sync catches up.
+- A move doesn't email the guest; a cancel or manual booking emails only if ticked.
+- Uploads: JPEG/PNG/WebP up to 15 MB (server action body limit 16 MB); HEIC is refused.
+  The seed creates photos only if missing, and `media:import` keeps files replaced in the admin.
+- Owner emails link to the booking in the admin via `ADMIN_URL`.
 - Totals and amounts charged show cents (`exact` in `formatMoney`, `<Price exact>`), so the
   page matches the card statement. Nightly prices stay rounded.
 
@@ -238,6 +268,15 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
   so a parallel file would expire another file's holds.
 - Turbo strips `MAIL_FROM` and `NEXT_PUBLIC_SITE_URL` from the worker unless they are in
   `globalPassThroughEnv` (Next apps get `NEXT_PUBLIC_*` by inference, plain Node apps don't).
+- Everything exported from a `'use server'` file is a callable endpoint. Helpers go in `lib/`.
+- `path.resolve(process.env.MEDIA_DIR …)` makes Turbopack trace the whole project; the media
+  routes and photo actions carry `/*turbopackIgnore: true*/`.
+- `docker compose restart` doesn't re-read `.env`; use `docker compose up -d app`.
+- Next's route announcer also has `role="alert"`; scope test selectors to `.note`.
+- Playwright MCP intercepts `confirm()` and stops the script: register `page.once('dialog')`
+  before the click.
+- Per-night state (price, blocked, minStay, reservation) is the `RoomDay` table; there is no
+  DayOverride table despite the plan.
 - `ref` is a reserved React prop: `PaymentStatus` takes `bookingRef`.
 - Core tests run against a `vyona_test` database that `packages/core/test/global-setup.ts`
   creates, migrates and truncates; the dev data is never touched.
