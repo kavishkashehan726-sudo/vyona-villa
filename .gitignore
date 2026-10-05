@@ -23,3 +23,12 @@ scripts/deploy.env
 
 # client feedback: copy and images, not for redistribution
 client updates/
+
+# monorepo
+.next/
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+packages/db/src/generated/
+.media/
+.pnpm-store/

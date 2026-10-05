@@ -5,6 +5,42 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-05 — Phase 1 step 1: monorepo scaffold
+
+The client approved the prototype and sent feedback (`client updates/feed_back_session_1/`,
+gitignored). Development moves to the real stack; the prototype is frozen.
+
+### Done
+
+- pnpm + Turborepo monorepo: `apps/web`, `apps/admin` (Next 16.3, React 19.3, Tailwind 4.3),
+  `apps/worker` (BullMQ 6), `packages/db` (Prisma 7.10), `packages/core`, `packages/ui`.
+- Prisma schema and first migration: Room, RoomDay, RateRule, Reservation, Payment, SyncLog,
+  Media, AdminUser, Setting. Money is integer cents.
+- Idempotent seed with the client's room list (Vyoma dropped, Tara added), rate rules from the
+  prototype (+20% Dec–Mar, +12% Fri/Sat) and the booking settings. It runs on every container start.
+- `packages/ui`: design tokens as a Tailwind `@theme`, the prototype's line icons plus a star for
+  Tara, and the logo behind one component.
+- docker-compose: postgres 17, redis 7, mailpit, one `app` container running `turbo dev`
+  (web :3000, admin :3001, worker), a `sh` tools service; the prototype moved behind a profile.
+- CI (`.github/workflows/ci.yml`): typecheck, test, build against postgres and redis services.
+- The origin IP was scrubbed from public files before the Phase 0 push.
+
+### Problems hit
+
+- Every Prisma query from Next and the worker failed with `ECONNREFUSED` while a direct `tsx`
+  script worked. Turbo 2's strict env mode strips undeclared variables, so `DATABASE_URL` never
+  reached the tasks. Fixed with `globalPassThroughEnv`.
+- `pnpm --filter @vyona/db deploy` ran pnpm's own `deploy` command; scripts now use `run`.
+- BullMQ 6 refused connection options without ioredis installed; core now exports `createRedis()`.
+
+### Next
+
+Step 2: port `nightly`/`quote` from `prototype/src/js/booking.js` into `packages/core` with rules
+from the database, the hold transaction (`SELECT … FOR UPDATE` on RoomDay), unit tests and a
+20-parallel-holds concurrency test.
+
+---
+
 ## 2026-09-23 — Deployed to vyonaweligama.com
 
 ### Done

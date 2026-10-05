@@ -1,0 +1,60 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "stream",
+  "globalEnv": [
+    "NODE_ENV"
+  ],
+  "globalPassThroughEnv": [
+    "DATABASE_URL",
+    "REDIS_URL",
+    "SMTP_URL",
+    "MEDIA_DIR",
+    "PAYHERE_*",
+    "BEDS24_*",
+    "ADMIN_*"
+  ],
+  "tasks": {
+    "generate": {
+      "cache": false
+    },
+    "build": {
+      "dependsOn": [
+        "^build",
+        "^generate",
+        "generate"
+      ],
+      "env": [
+        "DATABASE_URL",
+        "REDIS_URL",
+        "NEXT_PUBLIC_*"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "dist/**"
+      ]
+    },
+    "dev": {
+      "dependsOn": [
+        "^generate",
+        "generate"
+      ],
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {},
+    "typecheck": {
+      "dependsOn": [
+        "^generate",
+        "generate"
+      ]
+    },
+    "test": {
+      "dependsOn": [
+        "^generate",
+        "generate"
+      ],
+      "cache": false
+    }
+  }
+}

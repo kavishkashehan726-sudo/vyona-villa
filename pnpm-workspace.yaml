@@ -1,0 +1,14 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm 10 skips install scripts unless a package is listed here.
+onlyBuiltDependencies:
+  - '@prisma/engines'
+  - esbuild
+  - prisma
+  - sharp
+
+# Optional native speed-up for BullMQ; the JS fallback is fine.
+ignoredBuiltDependencies:
+  - msgpackr-extract

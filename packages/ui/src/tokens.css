@@ -1,0 +1,32 @@
+/* VYONA design tokens, sampled from the approved template (see CLAUDE.md).
+   Imported by every app after `@import "tailwindcss"`. The font variables are
+   set by next/font in each app's root layout. */
+
+@theme {
+  --color-linen: #f1ece3;
+  --color-sand: #e6ded1;
+  --color-stone: #d8cebe;
+  --color-olive: #4a4f3a;
+  --color-olive-deep: #3a3f2e;
+  --color-ink: #2b2a26;
+  --color-taupe: #6b6457;
+  --color-bronze: #a88b5e;
+  --color-ivory: #faf7f1;
+  --color-booked: #c9b9a4;
+  --color-reserved: #e8d9b8;
+
+  --font-serif: var(--font-cormorant), 'Cormorant Garamond', Garamond, 'Times New Roman', serif;
+  --font-sans: var(--font-jost), 'Jost', 'Helvetica Neue', Arial, sans-serif;
+  --font-script: var(--font-script-face), cursive;
+
+  --text-hero: clamp(2.7rem, 1.5rem + 4.2vw, 5.2rem);
+  --text-h2: clamp(2rem, 1.35rem + 2.3vw, 3.4rem);
+  --text-h3: clamp(1.35rem, 1.1rem + 0.8vw, 1.8rem);
+  --text-body: clamp(1.02rem, 0.98rem + 0.2vw, 1.14rem);
+  --text-caps: 0.72rem;
+
+  --tracking-caps: 0.28em;
+  --ease-vy: cubic-bezier(0.22, 1, 0.36, 1);
+  --radius-vy: 2px;
+  --shadow-vy: 0 30px 60px -30px rgb(43 42 38 / 0.35);
+}

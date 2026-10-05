@@ -1,7 +1,73 @@
-# Development services for VYONA.
-# Phase 0 ships only the prototype builder; web/admin/api/postgres/redis arrive in Phase 1.
+# Development stack for VYONA. `docker compose up` brings up everything:
+#   web     http://localhost:3000   public site + API
+#   admin   http://localhost:3001   dashboard
+#   mailpit http://localhost:8025   catches every email the app sends
+# Postgres and Redis are bound to localhost only.
+
+x-app: &app
+  build: { context: ., dockerfile: docker/dev.Dockerfile }
+  env_file: [{ path: .env, required: false }]
+  environment: &env
+    DATABASE_URL: postgresql://vyona:vyona@postgres:5432/vyona
+    REDIS_URL: redis://redis:6379
+    SMTP_URL: smtp://mailpit:1025
+    MEDIA_DIR: /app/.media
+    NEXT_PUBLIC_SITE_URL: http://localhost:3000
+  volumes:
+    - .:/app
+    - pnpm_store:/pnpm-store
+    - nm_root:/app/node_modules
+    - nm_web:/app/apps/web/node_modules
+    - nm_admin:/app/apps/admin/node_modules
+    - nm_worker:/app/apps/worker/node_modules
+    - nm_db:/app/packages/db/node_modules
+    - nm_core:/app/packages/core/node_modules
+    - nm_ui:/app/packages/ui/node_modules
+    - next_web:/app/apps/web/.next
+    - next_admin:/app/apps/admin/.next
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_started }
+
 services:
+  app:
+    <<: *app
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    command: sh -c "pnpm install && pnpm db:deploy && pnpm db:seed && pnpm dev"
+
+  # One-off commands: docker compose run --rm sh pnpm test
+  sh:
+    <<: *app
+    profiles: [tools]
+    entrypoint: []
+    command: sh
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: vyona
+      POSTGRES_PASSWORD: vyona
+      POSTGRES_DB: vyona
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vyona"]
+      interval: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports: ["127.0.0.1:6379:6379"]
+
+  mailpit:
+    image: axllent/mailpit
+    ports: ["127.0.0.1:8025:8025"]
+
+  # Phase 0 prototype builder, kept for reference builds.
   prototype:
+    profiles: [prototype]
     image: node:22-alpine
     working_dir: /app/prototype
     volumes:
@@ -14,4 +80,15 @@ services:
     command: sh -c "npm install --no-audit --no-fund && npm run dev"
 
 volumes:
+  pgdata:
+  pnpm_store:
+  nm_root:
+  nm_web:
+  nm_admin:
+  nm_worker:
+  nm_db:
+  nm_core:
+  nm_ui:
+  next_web:
+  next_admin:
   prototype_node_modules:

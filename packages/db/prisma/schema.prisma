@@ -1,0 +1,186 @@
+// VYONA booking engine schema.
+//
+// Money is stored as integer minor units (US cents) to keep sums exact.
+// Dates of stay are calendar dates (@db.Date) in the villa's local calendar;
+// a night is identified by the date it starts on, so a stay covers
+// checkIn <= date < checkOut.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ReservationStatus {
+  HOLD // dates locked while the guest pays; expires at holdUntil
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+enum ReservationSource {
+  DIRECT
+  BOOKING_COM
+  MANUAL
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum SyncDirection {
+  OUT // us -> Beds24
+  IN // Beds24 -> us (webhook or poll)
+}
+
+model Room {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  number       Int      @unique
+  name         String
+  element      String // Earth, Water, ...
+  icon         String // icon id in @vyona/ui
+  keywords     String[]
+  category     String // "Studio", "Spacious king room", "King room"
+  sizeSqm      Int
+  maxGuests    Int
+  features     String[]
+  baseRate     Int // cents, USD, before rate rules
+  photos       String[] // Media keys, first one is the cover
+  beds24RoomId Int?     @unique
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  days         RoomDay[]
+  reservations Reservation[]
+}
+
+// One row per room per night. This is the row the booking transaction locks
+// (SELECT ... FOR UPDATE), so two guests can never hold the same night.
+// Rows are created on demand. A missing row means "open, base price".
+model RoomDay {
+  roomId        String
+  date          DateTime     @db.Date
+  reservationId String? // who occupies the night; null = free
+  blocked       Boolean      @default(false) // closed by the owner
+  price         Int? // cents; overrides the rate rules for this night
+  minStay       Int?
+  updatedAt     DateTime     @updatedAt
+  room          Room         @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+
+  @@id([roomId, date])
+  @@index([reservationId])
+}
+
+// Multiplicative pricing rules, applied in `sort` order.
+// A SEASON rule matches by month (1-12), a WEEKDAY rule by day of week (0 = Sunday).
+model RateRule {
+  id       String  @id @default(cuid())
+  name     String
+  months   Int[]
+  weekdays Int[]
+  percent  Int // +20 = 20% more, -10 = 10% less
+  active   Boolean @default(true)
+  sort     Int     @default(0)
+}
+
+model Reservation {
+  id          String            @id @default(cuid())
+  ref         String            @unique // shown to the guest, e.g. VY-7K3Q9
+  roomId      String
+  checkIn     DateTime          @db.Date
+  checkOut    DateTime          @db.Date
+  guests      Int
+  status      ReservationStatus
+  source      ReservationSource
+  holdUntil   DateTime?
+  guestName   String
+  email       String
+  phone       String?
+  country     String?
+  arrivalTime String?
+  notes       String?
+  currency    String            @default("USD")
+  total       Int // cents
+  breakdown   Json // nightly prices, discount, service charge
+  externalId  String?           @unique // Beds24 booking id
+  cancelledAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  room     Room      @relation(fields: [roomId], references: [id])
+  days     RoomDay[]
+  payments Payment[]
+
+  @@index([roomId, checkIn])
+  @@index([status, holdUntil])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  reservationId String
+  provider      String        @default("PAYHERE")
+  orderId       String        @unique
+  paymentId     String?
+  amount        Int // cents, in `currency`
+  currency      String
+  status        PaymentStatus @default(PENDING)
+  raw           Json? // last notify payload, for audits
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+}
+
+// Every exchange with Beds24, both directions.
+model SyncLog {
+  id        String        @id @default(cuid())
+  direction SyncDirection
+  kind      String // "ari.push", "booking.create", "webhook", "poll"
+  ref       String? // reservation ref or external id
+  payload   Json
+  status    String // "ok", "error", "retry"
+  error     String?
+  attempts  Int           @default(1)
+  createdAt DateTime      @default(now())
+
+  @@index([createdAt])
+}
+
+// Photos and, later, video. Files live on the media volume; the public site
+// serves them through next/image.
+model Media {
+  key       String   @id // stable name used by rooms and pages, e.g. "room-dhara"
+  path      String // relative to MEDIA_DIR
+  alt       String   @default("")
+  width     Int
+  height    Int
+  lqip      String // 24px WebP data URL for blur-up
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+// Key/value settings the owner edits in the admin (service charge, LKR rate...).
+model Setting {
+  key   String @id
+  value Json
+}
