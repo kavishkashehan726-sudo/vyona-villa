@@ -334,6 +334,8 @@ function applyLogged(booking: Beds24Booking, now: Date) {
     () => importBooking(booking, now),
     (r) => {
       if (r.outcome === 'unlinked') return ['error', `Beds24 room ${booking.roomId} is not linked to a room here`];
+      // Our own bookings coming back, replays and repeats of a known clash: nothing new to show.
+      if (r.outcome === 'ours' || r.outcome === 'unchanged' || r.outcome === 'ignored') return ['seen'];
       const why = [
         r.conflicts.length && `sold over ${r.conflicts.join(', ')}`,
         r.closed.length && `sold on closed nights ${r.closed.join(', ')}`,

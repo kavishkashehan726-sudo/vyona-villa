@@ -1224,11 +1224,11 @@
     color: var(--color-olive-deep);
     text-decoration: none;
   }
-  .table__main:hover {
+  a.table__main:hover {
     text-decoration: underline;
   }
-  .table__main::after {
-    /* The whole row opens the booking. */
+  a.table__main::after {
+    /* The whole row opens the booking. Only on a link: on plain text it would cover the row's buttons. */
     content: '';
     position: absolute;
     inset: 0;

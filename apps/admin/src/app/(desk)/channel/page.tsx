@@ -5,6 +5,7 @@ import { today, toIso } from '@vyona/core/dates';
 import { prisma } from '@vyona/db';
 import { Icon, type IconName } from '@vyona/ui';
 import { ActionForm, Submit } from '@/components/ActionForm';
+import { RefreshSoon } from '@/components/RefreshSoon';
 import { requireAdmin } from '@/lib/session';
 import { stayRange, when } from '@/lib/format';
 import { cancelOnBookingCom, linkRooms, sellOnBookingCom, syncNow } from './actions';
@@ -45,8 +46,8 @@ export default async function ChannelPage() {
     prisma.setting.findUnique({ where: { key: POLLED_AT } }),
     prisma.syncLog.count({ where: { status: { in: ['error', 'conflict'] }, createdAt: { gt: new Date(now.getTime() - day) } } }),
     prisma.syncLog.findMany({
-      // Quiet runs of the 10-minute check would bury everything else.
-      where: { NOT: { status: 'ok', kind: { in: ['poll', 'booking.fetch'] } } },
+      // Quiet runs of the 10-minute check, and the bookings it saw again, would bury everything else.
+      where: { NOT: [{ status: 'ok', kind: { in: ['poll', 'booking.fetch'] } }, { status: 'seen' }] },
       orderBy: { createdAt: 'desc' },
       take: 40,
     }),
@@ -204,6 +205,8 @@ export default async function ChannelPage() {
             </ActionForm>
           )}
 
+          {/* A sale reaches the calendar a moment after the page is drawn. */}
+          {sales.some((b) => b.status !== 'cancelled' && !b.ours) && <RefreshSoon />}
           {sales.length > 0 && (
             <table className="table">
               <thead>

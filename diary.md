@@ -5,6 +5,31 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-05 — Step 6 follow-up: walking `/channel` in the browser
+
+### Done
+
+- The 10-minute poll logged our own bookings as "Booking.com booking received" and logged a
+  known overbooking again on every pass, which doubled the problem count. Imports that change
+  nothing are now `seen`, hidden from the log and from the count (test added).
+- "Guest cancels" did nothing: the `.table__main::after` row overlay sat on top of it. The
+  overlay now applies only to links.
+- After a sale the row said "Arriving…" until a manual reload. `RefreshSoon` refreshes the page
+  once, three seconds later, while any sale is still waiting.
+
+### Checked
+
+- In Chrome, as the owner: linking rooms, a sale, a refused repeat sale, a forced overbooking
+  (log entry and email), a guest cancel that hands the nights to the waiting booking, and a sale
+  that turns into its VY- ref with no reload. No horizontal scroll at 390px.
+- Typecheck clean, core tests 87/87.
+
+### Next
+
+- Step 7: production images, compose, backups.
+
+---
+
 ## 2026-10-05 — Phase 1 step 6: Booking.com through Beds24
 
 ### Done

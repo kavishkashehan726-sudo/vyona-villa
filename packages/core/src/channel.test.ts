@@ -227,6 +227,9 @@ describe('importing Booking.com bookings', () => {
     expect(await prisma.syncLog.findFirst({ where: { kind: 'booking.import', status: 'conflict' }, orderBy: { createdAt: 'desc' } })).toMatchObject({
       error: expect.stringContaining(ours.ref),
     });
+    // Seen again by the poll: the clash is not reported twice.
+    expect((await pull(Number(result.reservation!.externalId))).outcome).toBe('unchanged');
+    expect(await prisma.syncLog.findFirst({ where: { kind: 'booking.import' }, orderBy: { createdAt: 'desc' } })).toMatchObject({ status: 'seen' });
 
     await cancelReservation(ours.id);
     expect(await occupants(0, 4)).toEqual(Array(4).fill(theirs));

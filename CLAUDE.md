@@ -233,7 +233,10 @@ elements, pointed-oval seed logo.
   over when the other booking moves or is cancelled.
 - The poll checkpoint (`Setting beds24.polledAt`) moves only when the whole poll succeeds.
 - Every exchange writes a `SyncLog` row; the admin's Booking.com page shows them, hiding quiet
-  polls and fetches.
+  polls and fetches. An import that changes nothing (our own booking, a replay, a clash already
+  reported) is logged as `seen`, hidden and not counted as a problem.
+- The test-mode sales table refreshes itself once (`RefreshSoon`) while a sale is still
+  "Arriving…": the worker imports it after the action has already revalidated.
 - Totals and amounts charged show cents (`exact` in `formatMoney`, `<Price exact>`), so the
   page matches the card statement. Nightly prices stay rounded.
 
@@ -299,6 +302,8 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
   routes and photo actions carry `/*turbopackIgnore: true*/`.
 - `docker compose restart` doesn't re-read `.env`; use `docker compose up -d app`.
 - Next's route announcer also has `role="alert"`; scope test selectors to `.note`.
+- `.table__main` on an `<a>` is a stretched link: its `::after` covers the whole row. Plain-text
+  names use a `<span className="table__main">`, which has no overlay, so row buttons stay clickable.
 - Playwright MCP intercepts `confirm()` and stops the script: register `page.once('dialog')`
   before the click.
 - Per-night state (price, blocked, minStay, reservation) is the `RoomDay` table; there is no
