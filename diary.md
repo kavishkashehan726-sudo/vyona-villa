@@ -5,6 +5,37 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-05 — Phase 1 step 2: pricing, availability, holds
+
+### Done
+
+- `packages/core`: `dates` (epoch days, the villa's own "today" in Asia/Colombo), `pricing`
+  (`nightlyRate`, `quote`), `settings` (rules and settings from the database, with defaults),
+  `availability` (`checkStay`, `dayState`, `roomCalendar`, `searchStay`) and `booking`
+  (`holdRoom`, `expireHolds`, `BookingError`).
+- Nightly rates match the prototype for every night of a year at every room price (tested). The
+  discount and service charge are now exact to the cent; the prototype rounded them to dollars.
+- `holdRoom` locks the room's nights in date order, takes over holds that ran out, enforces min
+  stay and blocks, and writes the quote into the reservation's breakdown.
+- 19 tests: pricing parity, quotes, date edge cases, and integration tests on `vyona_test`,
+  including 20 simultaneous holds giving exactly one success, and overlapping stays racing
+  without sharing a night.
+
+### Bug the tests caught
+
+The first version locked and read in one statement (`… LEFT JOIN "Reservation" … FOR UPDATE OF
+d`). All 20 parallel holds succeeded once the night rows already existed: the waiting statement
+re-read the locked row but joined against its old snapshot, where the winning reservation did
+not exist. Locking and reading are now two statements. The race test runs both with fresh rows
+and with existing rows, and fails when the lock is removed (checked).
+
+### Next
+
+Step 3: port the prototype's public site to `apps/web`, section by section, with the client's
+feedback and every frontend-guide effect.
+
+---
+
 ## 2026-10-05 — Phase 1 step 1: monorepo scaffold
 
 The client approved the prototype and sent feedback (`client updates/feed_back_session_1/`,

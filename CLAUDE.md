@@ -12,7 +12,7 @@ The full system is specified in [docs/booking-engine-spec.md](docs/booking-engin
 - **Phase 0 (done, client approved):** `prototype/`, a single-file HTML page, still live at the
   domain until the cut-over. It is frozen; it is the visual reference for the port, not edited.
 - **Phase 1 (current):** the real system in a pnpm + Turborepo monorepo. Build order:
-  1 scaffold ✓ · 2 core (pricing, hold transaction, tests) · 3 public site port · 4 booking +
+  1 scaffold ✓ · 2 core ✓ · 3 public site port · 4 booking +
   PayHere · 5 admin · 6 Beds24 · 7 production. Client feedback lives in `client updates/`
   (gitignored) and is summarised under *Content decisions*.
 
@@ -170,6 +170,14 @@ elements, pointed-oval seed logo.
 | Draco pipeline for the real `.glb` | documented in README, not used yet |
 
 ## Gotchas
+
+- **Lock and read in separate statements.** Under READ COMMITTED a `SELECT … FOR UPDATE` that
+  waited for a lock re-reads the locked row but joins against its old snapshot, so it misses the
+  winner's new reservation. `holdRoom` locks with one statement and reads with the next. The
+  concurrency test pre-creates the RoomDay rows, because fresh rows are serialised by the
+  primary-key insert instead and hide this bug.
+- Core tests run against a `vyona_test` database that `packages/core/test/global-setup.ts`
+  creates, migrates and truncates; the dev data is never touched.
 
 - **Turbo 2 runs tasks in strict env mode**: any variable not listed in `turbo.json` is stripped.
   Runtime secrets go in `globalPassThroughEnv`, or Prisma silently falls back to localhost and
