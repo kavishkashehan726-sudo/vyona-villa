@@ -28,6 +28,7 @@ before the real build starts. The full system is specified in [docs/booking-engi
 ```
 brand/              vyona-logo.svg, vyona-mark.svg (redrawn from the template nav logo)
 docs/               specs + screenshots for the README
+scripts/            deploy.sh + deploy.env.example (deploy.env is gitignored)
 images/             59 client photos (ignored)
 template/           the design reference JPEG (ignored)
 prototype/
@@ -43,12 +44,35 @@ prototype/
 ## Commands
 
 ```bash
-docker compose run --rm prototype npm run build    # → .dist/vyona-prototype.html
-docker compose up prototype                        # watch + serve on :5173
+docker compose run --rm prototype npm run build      # → .dist/vyona-prototype.html  (one file)
+docker compose run --rm prototype npm run build:web  # → .dist/web/  (document + assets/)
+docker compose up prototype                          # watch + serve on :5173
+./scripts/deploy.sh --build                          # build:web + rsync to the VPS
 ```
 
-The built file is ~4 MB, fully offline (no external request except the Google Maps iframe, which
-loads lazily and only when online).
+**Two builds from one source.** `build` inlines every photo as base64: ~4 MB, fully offline, for
+sending over WhatsApp. `build:web` writes the photos to `assets/*.webp` and leaves only the 24px
+placeholders inline: a 0.93 MB document (356 KB compressed) the browser paints before the photos
+arrive. `images.js` treats `p.src` as an opaque URL, so neither mode needs a JS change.
+
+Neither build makes an external request except the Google Maps iframe, which loads lazily and only
+when online.
+
+## Deployment
+
+Live at **https://vyonaweligama.com** — CloudPanel static site on the OVH Canada VPS (address in `scripts/deploy.env`),
+behind Cloudflare. `scripts/deploy.sh` rsyncs `.dist/web/` to the site root; `scripts/deploy.env`
+holds host, user and path and is **gitignored** because the repo is public.
+
+- SSH as the site user `vyonaweligama` with `~/.ssh/vyona_deploy`. Never root: the key can only
+  write into one htdocs folder.
+- Cloudflare SSL mode is **Full**, and the SSL mode is per-zone, not per-account. Full (strict)
+  is only safe once CloudPanel holds a real Let's Encrypt cert — with the self-signed default it
+  returns error 526 to every visitor. Flexible is never right: CloudPanel's own HTTPS redirect
+  turns it into a redirect loop.
+- `www` 301s to the apex. Both records are proxied (orange cloud).
+- The prototype is `noindex` in the markup and disallowed in `robots.txt` while prices are
+  placeholders.
 
 ## Design tokens
 
@@ -107,6 +131,12 @@ elements, pointed-oval seed logo.
 - The client's photos are WhatsApp-compressed to ~1200px; hero images can't go sharper until the
   originals arrive.
 - Playwright MCP can only write inside the project, hence `.playwright-mcp/` (ignored).
+- `scp` takes `-P` for the port, `ssh` takes `-p`. Sharing one options array between them makes
+  scp read the port number as a filename.
+- Base64 costs about a third on the wire even after gzip: the same page is 2.82 MB compressed
+  when photos are inlined and 356 KB when they are files.
+- Cloudflare does not cache HTML by default (`cf-cache-status: DYNAMIC`) but does cache `.webp`.
+  That is most of why the split build helps — photos come from the Singapore edge, not Canada.
 
 ## Next phases
 

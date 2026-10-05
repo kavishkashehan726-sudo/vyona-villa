@@ -17,3 +17,9 @@ node_modules/
 
 # Playwright MCP scratch output
 .playwright-mcp/
+
+# server details, not public
+scripts/deploy.env
+
+# client feedback: copy and images, not for redistribution
+client updates/

@@ -5,6 +5,61 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-09-23 — Deployed to vyonaweligama.com
+
+### Done
+
+- Domain `vyonaweligama.com` (Namecheap, Cloudflare nameservers) pointed at the CloudPanel VPS,
+  on OVH (address in `scripts/deploy.env`, not in the repo — it would bypass Cloudflare). Created as a **Static HTML Site**, site user `vyonaweligama`.
+- Dedicated deploy key `~/.ssh/vyona_deploy`, authorised for the site user only — not root, so it
+  can only write into one htdocs folder.
+- `scripts/deploy.sh` rsyncs the build to the server and writes `robots.txt`. Server details live
+  in `scripts/deploy.env`, gitignored.
+- Added a **web build** (`npm run build:web`, `--web` in build.mjs): photos are written to
+  `assets/*.webp` instead of being inlined as base64. Only the 24px placeholders stay in the
+  document, so blur-up still works on first paint. `images.js` needed no change — it already
+  treated `p.src` as an opaque URL.
+
+### Why the web build was needed
+
+The single file is right for WhatsApp and wrong for a server. Measured on the live site:
+
+| | single file | web build |
+|---|---|---|
+| Document, compressed | 2.82 MB | **356 KB** |
+| Photos | in the document | 2.5 MB, lazy, cached at the edge |
+| Cloudflare cache | `DYNAMIC` (HTML is never cached) | `HIT` on the photos |
+| Load on a slow link | 98 s | 2.7 s |
+
+Cloudflare does not cache HTML by default but does cache `.webp`, so after the split the photos
+serve from the Singapore edge instead of OVH Canada. Both builds ship from the same source; the
+single file is still what goes over WhatsApp.
+
+### Verified
+
+- DNS clean on 1.1.1.1, 8.8.8.8 and 9.9.9.9; the old Namecheap parking A record is gone.
+- Valid TLS chain through Cloudflare (`ssl_verify_result=0`). `www` 301s to the apex.
+- Deployed document SHA-256 matches the local build; 49 asset files on the server.
+- Playwright against the byte-identical build: no console errors, no broken images, photos load
+  lazily on scroll (1 above the fold, 25 after scrolling, the rest only when a dialog opens),
+  3D canvas renders, map loads.
+
+### Gotchas hit
+
+- Two A records on the apex (the new one and Namecheap's parking IP). Let's Encrypt round-robined
+  onto the dead one and failed with "Timeout during connect (likely firewall problem)" — nothing
+  to do with the firewall. Deleting the stale record fixed it.
+- Cloudflare SSL mode is **per-zone**, not per-account, so changing it cannot affect other domains.
+  Full is correct here; Full (strict) would return 526 against CloudPanel's self-signed default.
+- `scp` takes `-P` for the port, `ssh` takes `-p`.
+
+### Next
+
+1. Send the link to the client, and the single file over WhatsApp as a backup.
+2. Collect feedback on copy, room details, prices and photo choices.
+3. Quality photos and the missing assets (beach photo, hero video, `.glb`) before Phase 1.
+4. Phase 1 proper: Next.js monorepo, Postgres + Prisma, Redis/BullMQ, Booking.com ARI sync.
+
 ## 2026-09-22 — Phase 0: project setup + client prototype
 
 ### Done

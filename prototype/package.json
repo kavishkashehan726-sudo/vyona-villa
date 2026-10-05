@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
+    "build:web": "node build.mjs --web",
     "dev": "node build.mjs --watch --serve"
   },
   "dependencies": {
