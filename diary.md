@@ -38,6 +38,9 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 - **DB:** migration `admin_sessions` (`AdminSession`, `Reservation.ownerNotes`). The seed
   creates photos only if missing and never overwrites the owner's order. `media:import` keeps
   files that were replaced through the admin. `convertPhoto` is shared by both.
+- **README** rewritten for Phase 1: status table, the site, booking and admin, the Docker quick
+  start, and the prototype as its own section. The screenshots were retaken from `apps/web` and
+  the admin, with demo bookings that were deleted afterwards.
 
 ### Checked
 

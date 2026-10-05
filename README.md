@@ -2,39 +2,50 @@
 
 # VYONA
 
-**Direct-booking site for a seven-room boutique villa in Weligama, Sri Lanka.**
+**Direct-booking system for a seven-room boutique villa in Weligama, Sri Lanka.**
 
-A single-file, fully offline HTML prototype with an interactive 3D villa, a custom GLSL water
-shader, a shader-based liquid hover and a working mock booking flow — built with Three.js, GSAP
-and Motion, bundled by esbuild into one 4 MB file you can send over WhatsApp.
+A Next.js public site with an interactive 3D villa and a live booking calendar, PayHere checkout
+with room holds that can't double-book, an owner's admin, and a job worker for emails and
+channel sync. Postgres, Prisma, Redis and BullMQ in a pnpm + Turborepo monorepo, all running in
+Docker.
 
 </div>
 
-![The VYONA hero](docs/screenshots/hero.jpg)
+![The VYONA home page](docs/screenshots/hero.jpg)
 
-## Why a single file
+## Status
 
-The villa's owner needed to review the design before the real system was built, from a phone, with
-patchy connectivity. So the prototype is one HTML file: every photo is a WebP data URI, every font
-is inlined base64, and Three.js, GSAP and Motion are bundled in. Open it from an email attachment
-on a plane and the 3D scene still runs. The only network request on the page is the Google Maps
-iframe, and it loads lazily and only when the browser reports it is online.
+| Phase | What | State |
+|---|---|---|
+| 0 | Single-file HTML prototype for the client to review ([`prototype/`](prototype/)) | Done, approved, live at [vyonaweligama.com](https://vyonaweligama.com) |
+| 1.1–1.3 | Monorepo, pricing and availability core, public site ported from the prototype | Done |
+| 1.4 | Booking flow: room holds, PayHere checkout, confirmation emails, hold expiry | Done |
+| 1.5 | Owner's admin: calendar, bookings, rates, photos, settings | Done |
+| 1.6 | Booking.com sync through Beds24 | Next |
+| 1.7 | Production images, deployment and backups | Planned |
 
-## What's in it
+The full specification is in [docs/booking-engine-spec.md](docs/booking-engine-spec.md), and the
+3D and motion rules are in [docs/frontend-visual-guide.md](docs/frontend-visual-guide.md).
+
+## The public site
 
 |  |  |
 |---|---|
-| **Interactive 3D villa** | A stylised model of the grounds built entirely in code — buildings, hipped roofs, palms with swaying fronds, loungers, a shade sail and a pergola. Orbit with damping and auto-rotate, hover to make a zone glow, click to fly the camera there and open its card. |
+| **Interactive 3D villa** | A stylised model of the grounds built in code with Three.js: buildings, hipped roofs, palms with swaying fronds, loungers, a shade sail and a pergola. Orbit within limits, hover to make a zone glow, click to fly the camera there and open its card. Loaded with a dynamic import, only when it scrolls into view. |
 | **Custom water shader** | The pool is a `ShaderMaterial`: layered sine waves displace the surface, normals are rebuilt from finite differences, and the fragment shader adds depth tint, animated caustics, a fresnel sky reflection and a sun glint. |
-| **Liquid image hover** | One shared WebGL canvas is moved over whichever image the pointer is on and redraws it through a ripple-distortion shader — no per-image contexts. |
-| **Mock booking flow** | Two-month calendar with availability, per-night pricing, hover range preview, guest stepper, USD/LKR toggle, validation, a 15-minute hold with a live countdown, and a confirmation reference. A bottom sheet on mobile. |
-| **Motion** | Ken Burns hero cross-fade, GSAP ScrollTrigger parallax at several depths, `scaleY` image unveils, magnetic buttons on a spring, and a custom cursor that grows over links. Transform and opacity only. |
-| **Graceful degradation** | A capability check (WebGL, renderer string, `deviceMemory`, `hardwareConcurrency`, `saveData`, reduced motion, viewport) swaps the 3D scene for a swipeable photo sequence and switches off the ripple and cursor on weak devices. |
+| **Liquid image hover** | One shared WebGL canvas moves over whichever image the pointer is on and redraws it through a ripple shader, so there are no per-image contexts. |
+| **Live booking calendar** | Two months of real availability and nightly prices from the server, a hover range preview, guest stepper, USD/LKR toggle, a server-side hold with a countdown, then PayHere. A bottom sheet on mobile. |
+| **Motion** | Ken Burns hero cross-fade, GSAP ScrollTrigger parallax at several depths, `scaleY` image unveils, magnetic buttons on a spring, and a custom cursor. Transform and opacity only, and reduced motion is respected. |
+| **Graceful degradation** | A capability check (WebGL, renderer string, `deviceMemory`, `hardwareConcurrency`, `saveData`, reduced motion, viewport) swaps the 3D scene for a photo slider and switches off the ripple and cursor on weak devices. `?lite=1` and `?full=1` force either mode. |
+| **Fast photos without an optimiser** | Photos are converted once to 1200px WebP plus a 24px blurred placeholder stored in the database. The placeholder paints immediately inside a fixed aspect box, so nothing shifts, and the files are served with a one-year cache. |
+
+Pages are server components. Room pages carry JSON-LD `HotelRoom` data, and the layout carries
+`LodgingBusiness`.
 
 <table>
 <tr>
 <td width="50%"><img src="docs/screenshots/villa-3d.jpg" alt="The interactive 3D villa grounds"></td>
-<td width="50%"><img src="docs/screenshots/booking.jpg" alt="The booking calendar with a selected range"></td>
+<td width="50%"><img src="docs/screenshots/booking.jpg" alt="The booking calendar with four nights selected"></td>
 </tr>
 <tr>
 <td><img src="docs/screenshots/rooms.jpg" alt="The seven element rooms"></td>
@@ -42,84 +53,125 @@ iframe, and it loads lazily and only when the browser reports it is online.
 </tr>
 </table>
 
+## Booking
+
+1. **Quote.** `packages/core` prices each night from the room's base rate, season and weekday
+   rules, and any price the owner set for that night. A service charge and a long-stay discount
+   are applied on top. Money is integer cents in USD.
+2. **Hold.** "Review booking" locks the room's nights with `SELECT … FOR UPDATE` inside one
+   transaction and holds them for 15 minutes. A concurrency test fires 20 parallel holds at the
+   same nights and expects exactly one to win.
+3. **Pay.** Each attempt opens a PayHere payment with a server-signed form. Only PayHere's
+   signed notify confirms a booking. Retried notifies are idempotent, a late failure can't undo
+   a payment, and a payment that lands after its hold expired either takes the nights back or
+   alerts the owner to refund.
+4. **After.** The worker emails the guest and the owner, and sweeps expired holds every minute.
+
+Without PayHere credentials in development, checkout goes to a built-in test gateway at
+`/book/pay/mock` that checks the same hash and signs a notify the same way.
+
+## The admin
+
+The owner's desk runs on its own subdomain.
+
+- **Calendar:** rooms against six weeks of nights, with bookings by source, holds, closed nights,
+  custom prices and minimum stays. Drag across nights (or tap two on a phone) to close or open
+  them, or set a price or minimum stay.
+- **Bookings:** views for arrivals, departures, guests in house, payments due and refunds, plus
+  search. A booking can be moved to new dates or another room, cancelled with an optional email
+  to the guest, or entered by hand for walk-ins and phone bookings.
+- **Rates, photos and settings:** base rates and season or weekday rules; photo upload,
+  ordering, covers and alt text; service charge, discounts, the LKR rate, payment time and
+  pay-at-villa.
+
+Sign-in uses scrypt password hashes and sessions whose tokens are stored only as SHA-256, with a
+lockout after repeated failures.
+
+<table>
+<tr>
+<td width="50%"><img src="docs/screenshots/admin-calendar.jpg" alt="The admin calendar with bookings across the rooms"></td>
+<td width="50%"><img src="docs/screenshots/admin-bookings.jpg" alt="The admin bookings list"></td>
+</tr>
+</table>
+
 ## Quick start
 
-The client's photographs are not in this repository, so the build needs your own images. Drop them
-in `images/` and map them to the keys in `prototype/src/data/photos.json`.
+Everything runs in Docker; `node_modules` and `.next` live in named volumes, not on the host.
 
 ```bash
 git clone https://github.com/<your-user>/vyona-villa.git
 cd vyona-villa
-
-# one-off build → .dist/vyona-prototype.html
-docker compose run --rm prototype npm run build
-
-# or watch and serve on http://localhost:5173
-docker compose up prototype
+cp .env.example .env      # set ADMIN_EMAIL and ADMIN_PASSWORD (10+ characters) for the first login
+docker compose up
 ```
 
-Node 22 and `npm install && npm run build` inside `prototype/` work too, if you'd rather not use
-Docker. Add `?lite=1` to the URL to force the low-power fallback, or `?full=1` to force the full
-experience.
+The app container installs dependencies, applies migrations, seeds the rooms and rate rules,
+imports photos and starts every app:
 
-## How the build works
+| Service | URL |
+|---|---|
+| Public site | http://localhost:3000 |
+| Admin | http://localhost:3001 |
+| Mailpit (catches every email) | http://localhost:8025 |
 
-`prototype/build.mjs` does three things:
+The client's photographs are not in this repository. The site runs without them, with empty
+photo slots. To use your own, put them in `images/` and map them in
+[`packages/db/src/media-data.ts`](packages/db/src/media-data.ts), or upload them in the admin.
 
-1. **Photos** — sharp resizes each image to 1200px WebP (quality 60) and renders a 24px blurred
-   placeholder. Both go into a JSON map, cached by file mtime, that the page reads from a
-   `<script type="application/json">` tag. The placeholder shows immediately; the full image
-   decodes off-screen and fades in, so layout never shifts.
-2. **Code** — esbuild bundles the ES modules with `.woff2` as `dataurl`, `.glsl` and `.svg` as
-   `text`, and minifies.
-3. **Inlining** — the CSS, the JS bundle and the photo map are written into `index.html` at marker
-   comments, producing `.dist/vyona-prototype.html`.
+```bash
+docker compose run --rm sh pnpm typecheck    # also: test, build, db:migrate, db:studio
+docker compose run --rm sh pnpm media:import  # images/ → WebP + placeholders
+```
+
+Core tests run against a separate `vyona_test` database that the test setup creates and
+truncates, so development data is never touched. CI runs typecheck, tests and a full build
+against Postgres and Redis services.
 
 ## Project layout
 
 ```
-brand/                 logo and mark, redrawn as SVG
-docs/                  specifications and screenshots
-prototype/
-  build.mjs            sharp + esbuild → one HTML file
-  src/index.html       markup, with data-* hooks for every module
-  src/styles/          design tokens, sections, responsive rules
-  src/js/
-    villa3d.js         the 3D scene, zones, camera flights, fallback slider
-    water.vert.glsl    pool surface displacement
-    water.frag.glsl    caustics, fresnel, sun glint
-    booking.js         calendar, pricing, three-step flow, mobile drawer
-    ripple.js          shared-canvas liquid hover
-    motion.js          ScrollTrigger parallax and reveals
-    capability.js      device tiering
-    …                  hero, rooms, gallery, cursor, magnetic, images, ui, store
-  src/data/photos.json photo key → filename
+apps/
+  web/        Next.js public site; the public API lives in its route handlers
+  admin/      Next.js owner's desk
+  worker/     BullMQ worker: hold expiry, emails, Booking.com sync
+packages/
+  core/       pricing, availability, holds, payments, PayHere signing, admin operations, auth
+  db/         Prisma schema, migrations, seed (the client's room brief), photo conversion
+  ui/         design tokens (Tailwind 4 @theme), line icons, logo
+prototype/    Phase 0: the single-file HTML prototype
+brand/        logo and mark, redrawn as SVG
+docs/         specifications and screenshots
 ```
 
 ## Design
 
 The palette and typography come from the villa's own design reference: linen `#F1ECE3`, sand
 `#E6DED1`, olive `#4A4F3A`, ink `#2B2A26`, taupe `#6B6457` and a bronze accent `#A88B5E`, set in
-Cormorant Garamond with Jost for labels. The seven rooms are named for elements — Dhara, Jala,
-Agni, Vayu, Vyoma, Surya, Soma — each with its own line icon.
+Cormorant Garamond with Jost for labels. The seven rooms are named for elements, each with its
+own line icon: Dhara (earth), Jala (water), Vayu (air), Agni (fire), Soma (moon), Surya (sun)
+and Tara (star).
 
-The page is mobile-first and verified from 320px to 2560px with no horizontal scroll. Reduced
-motion is respected everywhere; the 3D scene renders only while it is on screen.
+Pages are mobile-first and checked from 320px to 2560px with no horizontal scroll.
 
-## Roadmap
+## The prototype
 
-Phase 0, the prototype in this repository, is complete and with the client. The production system
-is specified in [docs/booking-engine-spec.md](docs/booking-engine-spec.md):
+Before the real system, the owner needed to review the design from a phone with patchy
+connectivity. So [`prototype/`](prototype/) builds into a single HTML file: every photo is a
+WebP data URI, every font is inlined, and Three.js, GSAP and Motion are bundled in. It runs
+offline from an email attachment, booking flow (mocked) and 3D scene included. A second build
+writes the photos as files for the live site instead, cutting the page from 2.8 MB to 356 KB
+compressed.
 
-- **Phase 1** — Next.js monorepo (public site, admin, API), Postgres with Prisma, Redis and BullMQ
-  for jobs, all in docker-compose.
-- **Phase 2** — Booking.com ARI sync and webhooks, so rates and availability stay in step with the
-  channel manager.
-- **Phase 3** — Payments, email confirmations, and a real villa model. A `.glb` exported from the
-  architectural model, compressed with Draco (`gltf-transform draco`) and loaded through
-  `DRACOLoader`, will replace the coded scene; the zone, hover and camera logic stays as it is.
+```bash
+docker compose run --rm prototype npm run build      # → .dist/vyona-prototype.html
+docker compose run --rm prototype npm run build:web  # → .dist/web/
+docker compose up prototype                          # watch + serve on :5173
+```
+
+The prototype is frozen as the visual reference; every effect in it has been ported to
+`apps/web`.
 
 ## Licence
 
 Code is [MIT](LICENSE). The VYONA name, logo, photographs and written copy are the property of
-VYONA, Weligama, and are not licensed for reuse — replace them with your own if you build on this.
+VYONA, Weligama, and are not licensed for reuse. Replace them with your own if you build on this.
