@@ -21,8 +21,8 @@ Docker.
 | 1.1–1.3 | Monorepo, pricing and availability core, public site ported from the prototype | Done |
 | 1.4 | Booking flow: room holds, PayHere checkout, confirmation emails, hold expiry | Done |
 | 1.5 | Owner's admin: calendar, bookings, rates, photos, settings | Done |
-| 1.6 | Booking.com sync through Beds24 | Next |
-| 1.7 | Production images, deployment and backups | Planned |
+| 1.6 | Booking.com sync through Beds24 | Done (against a stand-in until the Beds24 account exists) |
+| 1.7 | Production images, deployment and backups | Next |
 
 The full specification is in [docs/booking-engine-spec.md](docs/booking-engine-spec.md), and the
 3D and motion rules are in [docs/frontend-visual-guide.md](docs/frontend-visual-guide.md).
@@ -70,6 +70,28 @@ Pages are server components. Room pages carry JSON-LD `HotelRoom` data, and the 
 Without PayHere credentials in development, checkout goes to a built-in test gateway at
 `/book/pay/mock` that checks the same hash and signs a notify the same way.
 
+## Booking.com
+
+Booking.com is connected through [Beds24](https://beds24.com), a channel manager, over its API v2.
+The worker runs every exchange, one at a time, and writes each one to a sync log the owner can
+read under **Booking.com** in the admin.
+
+- **Out.** Each linked room's nightly price, minimum stay and closed nights go to Beds24 within a
+  minute of a change, and the full year is sent again every night. Website and manual bookings
+  become Beds24 bookings, so Beds24 closes those nights on Booking.com itself. A raw availability
+  count is never sent, so it can't overwrite a Booking.com sale that hasn't reached us yet.
+- **In.** A Beds24 webhook names a booking, and the worker fetches it from the API and applies it
+  by its Beds24 id, so a replay changes nothing. A check every 10 minutes catches anything the
+  webhook missed, and pushes any of our bookings Beds24 doesn't have.
+- **Clashes.** A Booking.com booking takes nights from a guest who is still paying (who then
+  gets the refund path if they pay late), but never from a confirmed booking. It is recorded
+  anyway, the owner gets an "Overbooked" email, and it takes the nights once the other booking
+  moves or is cancelled.
+
+Until the villa has a Beds24 account, development runs against a built-in stand-in, and the admin
+can play a Booking.com guest: book a linked room, overbook it, or cancel. In production with no
+Beds24 key, sync is simply off.
+
 ## The admin
 
 The owner's desk runs on its own subdomain.
@@ -80,6 +102,8 @@ The owner's desk runs on its own subdomain.
 - **Bookings:** views for arrivals, departures, guests in house, payments due and refunds, plus
   search. A booking can be moved to new dates or another room, cancelled with an optional email
   to the guest, or entered by hand for walk-ins and phone bookings.
+- **Booking.com:** link rooms to Beds24, send prices or check for bookings on demand, and read
+  the sync log.
 - **Rates, photos and settings:** base rates and season or weekday rules; photo upload,
   ordering, covers and alt text; service charge, discounts, the LKR rate, payment time and
   pay-at-villa.

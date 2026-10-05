@@ -62,3 +62,21 @@ export async function expireStale(tx: Tx, nights: LockedNight[], keep?: string) 
     await tx.reservation.updateMany({ where: { id: { in: stale }, status: 'HOLD' }, data: { status: 'EXPIRED' } });
   }
 }
+
+/**
+ * Hands nights that were just freed to any other confirmed booking that covers
+ * them. Normally there is none; after an overbooking (Booking.com sold nights
+ * that were already taken) the second booking only gets the nights once the
+ * first one moves or is cancelled. Call with the rows already locked.
+ */
+export async function reclaimNights(tx: Tx, ranges: NightRange[]) {
+  for (const r of ranges.filter((r) => r.until > r.from)) {
+    await tx.$executeRaw`
+      UPDATE "RoomDay" d SET "reservationId" = x.id, "updatedAt" = now()
+      FROM "Reservation" x
+      WHERE d."roomId" = ${r.roomId} AND d."date" >= ${toIso(r.from)}::date AND d."date" < ${toIso(r.until)}::date
+        AND d."reservationId" IS NULL
+        AND x."roomId" = d."roomId" AND x.status = 'CONFIRMED'
+        AND x."checkIn" <= d."date" AND x."checkOut" > d."date"`;
+  }
+}

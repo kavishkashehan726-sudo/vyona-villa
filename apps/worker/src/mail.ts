@@ -187,3 +187,33 @@ export async function sendOwnerRefund(reservationId: string, orderId: string) {
   await transport.sendMail({ from: FROM, to: OWNER, subject: `Refund needed: ${r.ref} (${orderId})`, html, text });
   return `refund alert sent for ${r.ref}`;
 }
+
+/** Booking.com sold nights that were already booked here or that the owner had closed. */
+export async function sendOwnerConflict(reservationId: string) {
+  const { r, desk } = await booking(reservationId);
+  if (r.status !== 'CONFIRMED') return `skipped: ${r.ref} is ${r.status}`;
+  const [others, closed] = await Promise.all([
+    prisma.reservation.findMany({
+      where: { id: { not: r.id }, roomId: r.roomId, status: 'CONFIRMED', checkIn: { lt: r.checkOut }, checkOut: { gt: r.checkIn } },
+      orderBy: { checkIn: 'asc' },
+    }),
+    prisma.roomDay.count({ where: { roomId: r.roomId, blocked: true, date: { gte: r.checkIn, lt: r.checkOut } } }),
+  ]);
+  if (!others.length && !closed) return `skipped: ${r.ref} no longer overlaps anything`;
+  const rows: Row[] = [
+    ['Booking.com', `${r.ref} · ${r.guestName}`],
+    ['Room', `${r.room.number} - ${r.room.name}`],
+    ['Dates', `${dateFmt.format(r.checkIn)} → ${dateFmt.format(r.checkOut)}`],
+    ...others.map((o): Row => [`Already booked`, `${o.ref} · ${o.guestName}, ${dateFmt.format(o.checkIn)} → ${dateFmt.format(o.checkOut)}`]),
+    ...(closed ? ([['Closed by you', `${closed} of these nights`]] as Row[]) : []),
+  ];
+  const intro =
+    'Booking.com sold nights in this room that were not free. Move one of the bookings to another room, or cancel the Booking.com booking in the Booking.com extranet.';
+  if (!OWNER) {
+    console.error(`OVERBOOKED ${r.ref} in ${r.room.name}; ADMIN_EMAIL is not set`);
+    return 'skipped: ADMIN_EMAIL is not set';
+  }
+  const { html, text } = layout(`Overbooked: ${r.room.name}`, intro, rows, button(desk, 'Open booking'));
+  await transport.sendMail({ from: FROM, to: OWNER, subject: `Overbooked: ${r.room.name}, ${dateFmt.format(r.checkIn)} (${r.ref})`, html, text });
+  return `overbooking alert sent for ${r.ref}`;
+}

@@ -6,7 +6,7 @@
 import { prisma, type Prisma, type Reservation, type ReservationSource, type ReservationStatus } from '@vyona/db';
 import { newRef } from './booking';
 import { dayOf, nightsOf, parseDay, toDate, today } from './dates';
-import { expireStale, lockNights, type LockedNight } from './nights';
+import { expireStale, lockNights, reclaimNights, type LockedNight } from './nights';
 import { nightlyRate, quote, type Quote, type PricingSettings, type Rule } from './pricing';
 import { loadRules, loadSettings } from './settings';
 
@@ -321,7 +321,7 @@ export async function moveReservation(id: string, input: MoveInput, now = new Da
         where: { roomId: room.id, date: { gte: toDate(checkIn), lt: toDate(checkOut) } },
         data: { reservationId: id },
       });
-      return tx.reservation.update({
+      const moved = await tx.reservation.update({
         where: { id },
         data: {
           roomId: room.id,
@@ -332,6 +332,9 @@ export async function moveReservation(id: string, input: MoveInput, now = new Da
           breakdown: q,
         },
       });
+      // Its old nights may belong to a booking that overlapped it.
+      await reclaimNights(tx, [{ roomId: r.roomId, from: dayOf(r.checkIn), until: dayOf(r.checkOut) }]);
+      return moved;
     },
     { maxWait: 10_000, timeout: 10_000 },
   );
@@ -355,6 +358,7 @@ export async function cancelReservation(id: string, now = new Date()): Promise<{
       where: { id },
       data: { status: 'CANCELLED', cancelledAt: now, holdUntil: null },
     });
+    await reclaimNights(tx, [{ roomId: r.roomId, from: dayOf(r.checkIn), until: dayOf(r.checkOut) }]);
     return { reservation, was: r.status };
   });
 }

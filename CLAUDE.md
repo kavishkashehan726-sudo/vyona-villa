@@ -13,7 +13,7 @@ The full system is specified in [docs/booking-engine-spec.md](docs/booking-engin
   domain until the cut-over. It is frozen; it is the visual reference for the port, not edited.
 - **Phase 1 (current):** the real system in a pnpm + Turborepo monorepo. Build order:
   1 scaffold ✓ · 2 core ✓ · 3 public site ✓ · 4 booking +
-  PayHere ✓ · 5 admin ✓ · 6 Beds24 · 7 production. Client feedback lives in `client updates/`
+  PayHere ✓ · 5 admin ✓ · 6 Beds24 ✓ · 7 production. Client feedback lives in `client updates/`
   (gitignored) and is summarised under *Content decisions*.
 
 ## Hard rules
@@ -37,7 +37,8 @@ apps/
     src/app/        pages: / /stay /stay/[slug] /explore /explore/[pillar] /about /gallery
                     /contact /book /book/[ref] /book/pay/mock; media/[...path] serves .media/
     src/app/api/    calendar; bookings (POST hold), bookings/[id] (DELETE release),
-                    bookings/[id]/pay; payhere/notify; payhere/mock (test gateway's form)
+                    bookings/[id]/pay; payhere/notify; payhere/mock (test gateway's form);
+                    webhooks/beds24 (key-checked, queues a pull of the named booking)
     src/components/ server sections (sections/*), Photo, Nav, Footer, BookBar, RoomDialog,
                     PaymentStatus, Runtime (global effects, once), PageEffects (per page)
     src/client/     the prototype's js/ ported to TS: booking, hero, motion, ripple, cursor,
@@ -48,7 +49,9 @@ apps/
                     rooms, content, gallery, villa (pure data, safe in client code)
   admin/            Next 16 dashboard, admin.vyonaweligama.com (:3001)
     src/app/(desk)/ page.tsx (calendar), reservations (list, [id] + MoveForm, new), rates,
-                    photos, settings; each folder's actions.ts holds its server actions
+                    photos, settings, channel (Booking.com: link rooms, sync now, log, and
+                    in test mode "be a Booking.com guest"); each folder's actions.ts holds
+                    its server actions
     src/app/        login/, media/[...path] (serves .media/), api/health, icon.svg
     src/components/ ActionForm (+ Submit), Chart (calendar grid + selection panel),
                     GuestFields, StayFields, JumpTo, Nav
@@ -56,7 +59,8 @@ apps/
                     calls), throttle (login lockout), format
     src/proxy.ts    cookie gate; requireAdmin() does the real check
   worker/           BullMQ worker: hold expiry sweep (every minute), emails (mail.ts),
-                    Beds24 sync (step 6)
+                    Beds24 sync queue (concurrency 1): ARI push, booking push/cancel, pull,
+                    10-minute poll, full ARI daily at 03:30 Asia/Colombo
 packages/
   db/               Prisma 7 schema, migrations, idempotent seed (seed-data.ts = client brief),
                     password (scrypt), photo (convertPhoto: WebP + LQIP, shared by
@@ -64,7 +68,9 @@ packages/
   core/             pricing, availability, booking (hold), payments (pay, confirm, release,
                     notify), payhere (hash, verify; pure), queues (names, afterConfirm,
                     afterMove/Cancel/ManualBooking/RatesChange), nights (shared lock + expire),
-                    admin (grid, setNights, manual booking, move, cancel), auth (sessions)
+                    admin (grid, setNights, manual booking, move, cancel), auth (sessions),
+                    beds24/ (types, http client for API v2, mock on Redis, mode switch),
+                    channel (pushAri, pushBooking, importBooking, pullBooking, pollBookings)
   ui/               tokens.css (Tailwind 4 @theme), icons.tsx, logo.tsx (swap point for the
                     official logo)
 docker/             dev.Dockerfile
@@ -211,6 +217,23 @@ elements, pointed-oval seed logo.
 - Uploads: JPEG/PNG/WebP up to 15 MB (server action body limit 16 MB); HEIC is refused.
   The seed creates photos only if missing, and `media:import` keeps files replaced in the admin.
 - Owner emails link to the booking in the admin via `ADMIN_URL`.
+- **Beds24 mode** (`beds24Mode()`): `beds24` when `BEDS24_REFRESH_TOKEN` is set, `mock` without
+  it outside production (a stand-in on Redis, `b24mock:*` keys), `off` in production without it.
+  The webhook needs `?key=BEDS24_WEBHOOK_SECRET`; without a secret it answers only in mock mode.
+- **Out to Beds24:** each linked room's price, min stay and closed nights as calendar ranges;
+  closed nights and inactive rooms go as `override: 'blackout'`. Raw `numAvail` is **never**
+  pushed, so it can't reopen a Booking.com sale we haven't pulled yet. Confirmed DIRECT/MANUAL
+  bookings become Beds24 bookings (`apiReference` = our ref, found again by reference), so Beds24
+  closes their nights itself. Holds are not pushed. A move to an unlinked room cancels it there.
+- **In from Beds24:** webhook → `beds24-pull` job → fetch by id → `importBooking`, idempotent by
+  `externalId`. Bookings carrying one of our refs are skipped (`ours`); unlinked rooms are logged
+  as errors. An import expires live HOLDs on its nights (the late payer gets the refund path) but
+  never takes nights from a CONFIRMED booking: it is saved anyway, logged as `conflict`, and the
+  owner gets an "Overbooked" email once per booking and stay. `reclaimNights` hands the nights
+  over when the other booking moves or is cancelled.
+- The poll checkpoint (`Setting beds24.polledAt`) moves only when the whole poll succeeds.
+- Every exchange writes a `SyncLog` row; the admin's Booking.com page shows them, hiding quiet
+  polls and fetches.
 - Totals and amounts charged show cents (`exact` in `formatMoney`, `<Price exact>`), so the
   page matches the card statement. Nightly prices stay rounded.
 
@@ -264,6 +287,9 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
   confirm, release, notify). Any other order can deadlock against the expiry sweep.
 - BullMQ custom job ids may not contain `:`. Ids are deterministic (`guest-<id>`,
   `refund-<orderId>`) and completed jobs are kept 7 days, so a retried notify sends nothing twice.
+- Core test files use their own room numbers (channel 600+, admin 700+, payments 800+,
+  booking 900+): `Room.number` is unique and the test DB is truncated once per run. A fresh
+  `Beds24Mock` restarts its ids, so each channel test seeds `b24mock:seq` with its own range.
 - Core test files run one at a time (`fileParallelism: false`): `expireHolds` sweeps every room,
   so a parallel file would expire another file's holds.
 - Turbo strips `MAIL_FROM` and `NEXT_PUBLIC_SITE_URL` from the worker unless they are in
@@ -317,7 +343,9 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
 ## Waiting on the client
 
 Whether guests may pay at the villa (`payAtVilla`), the PayHere charge currency (USD or LKR),
-official logo, Tara's keywords, About copy and host photos, Explore subpage copy, real contact
+official logo, Tara's keywords, whether the Booking.com rate is the nightly rate or includes
+the service charge or a markup, the Beds24 room ids (and a check of blackout against the real
+account), About copy and host photos, Explore subpage copy, real contact
 details and address, high-res photos (beach, food, video), PayHere merchant account, Beds24
 account, SMTP provider, tax and service-charge rules, check-in/out times, cancellation policy.
 Placeholders are marked on the page; nothing blocks on these.

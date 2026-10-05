@@ -22,12 +22,18 @@ export const JOB = {
   ownerRefund: 'email-owner-refund',
   /** ops: { reservationId } → tells the guest the owner cancelled their booking. */
   guestCancellation: 'email-guest-cancellation',
-  /** sync: { reservationId } → create or update the booking in Beds24 (step 6). */
+  /** ops: { reservationId } → Booking.com sold nights that were taken or closed. */
+  ownerConflict: 'email-owner-conflict',
+  /** sync: { reservationId } → create or update the booking in Beds24. */
   beds24Booking: 'beds24-booking',
-  /** sync: { reservationId } → cancel the booking in Beds24 (step 6). */
+  /** sync: { reservationId } → cancel the booking in Beds24. */
   beds24Cancel: 'beds24-cancel',
-  /** sync: { roomIds?, from?, until? } → push prices and availability; no fields = everything (step 6). */
+  /** sync: { roomIds?, from?, until? } → push prices and closures; no fields = the next year, also daily. */
   beds24Ari: 'beds24-ari',
+  /** sync: { bookingId } → fetch one booking from Beds24 and apply it (the webhook's job). */
+  beds24Pull: 'beds24-pull',
+  /** sync, every 10 minutes: bookings changed in Beds24, and ours that never got there. */
+  beds24Poll: 'beds24-poll',
 } as const;
 
 // BullMQ 6 treats ioredis as optional and, under native ESM, wants a client
@@ -107,4 +113,21 @@ export async function afterCancel(reservationId: string, emailGuest: boolean) {
 /** Prices or availability changed: blocks, overrides, rates or settings. Omit the range for everything. */
 export async function afterRatesChange(range?: { roomIds: string[]; from: string; until: string }) {
   await queue(QUEUE.sync).add(JOB.beds24Ari, range ?? {}, sync);
+}
+
+/* ---------------------------------------------------------- Booking.com */
+
+/** Beds24 said a booking changed. Repeats are harmless: the import is idempotent. */
+export async function pullFromBeds24(bookingId: number) {
+  await queue(QUEUE.sync).add(JOB.beds24Pull, { bookingId }, sync);
+}
+
+/** Booking.com sold nights that were already booked or closed: tell the owner, once per booking and stay. */
+export async function overbooked(reservationId: string, stay: string) {
+  await queue(QUEUE.ops).add(JOB.ownerConflict, { reservationId }, once(`conflict-${reservationId}-${stay}`));
+}
+
+/** The owner asked to check Beds24 for changes now rather than wait for the next poll. */
+export async function pollBeds24Now() {
+  await queue(QUEUE.sync).add(JOB.beds24Poll, {}, { removeOnComplete: true, removeOnFail: 100 });
 }

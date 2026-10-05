@@ -5,6 +5,67 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-05 — Phase 1 step 6: Booking.com through Beds24
+
+### Done
+
+- **Adapter** (`packages/core/src/beds24/`): one `Beds24` interface with an HTTP client for API
+  v2 (refresh token → access token, cached until near expiry, one fresh sign-in on a 401; the
+  queue retries other failures) and a mock
+  that keeps its calendar and bookings in Redis. The mock can also play Booking.com: `sell`
+  refuses closed or taken nights unless forced, and `cancelSale`. `beds24Mode()` picks
+  `beds24`, `mock` (no token, not production) or `off` (no token in production).
+- **Out** (`channel.ts`): `pushAri` sends price, min stay and closed nights per linked room as
+  date ranges, with closed nights and inactive rooms as blackout and never a raw availability
+  count. `pushBooking` creates, updates or cancels the Beds24 copy of a confirmed website or
+  manual booking, found again by its ref if the id was lost.
+- **In:** `/api/webhooks/beds24` checks the key and queues a pull of the named booking.
+  `importBooking` applies it by Beds24 id (a replay changes nothing): new, changed dates or
+  room, or cancelled. It expires holds on those nights but never takes nights from a confirmed
+  booking. It records the clash, emails the owner "Overbooked", and `reclaimNights` hands the
+  nights over when the other booking moves or is cancelled.
+- **Worker:** a sync queue at concurrency 1 for ARI push, booking push and cancel, pull, a poll
+  every 10 minutes (imports what changed and pushes what Beds24 lacks) and the full year of
+  prices daily at 03:30 Colombo time. Owner admin changes queue the push through `lib/sync`.
+- **Admin `/channel`** ("Booking.com" in the nav): mode, linked rooms, last check and problem
+  count; "Check for bookings" and "Send prices now"; Beds24 room ids per room; in test mode a
+  form to book as a Booking.com guest (optionally forced over closed or booked nights) with a
+  "Guest cancels" button; and the sync log.
+- README (status, a Booking.com section, admin bullet) and `.env.example` (the two BEDS24
+  variables, explained).
+
+### Checked
+
+- Typecheck clean, core tests 87/87 (19 new in `channel.test.ts`), `next build` clean for web
+  and admin.
+- Walk-through against the stand-in, driven from a throwaway script and the real webhook route:
+  - linking two rooms sent 365 nights of prices;
+  - a manual booking reached the stand-in, which then refused to sell over it;
+  - a sale arrived through the webhook as a BOOKING_COM reservation, and three replays left one;
+  - a forced sale over the manual booking was saved, logged as a conflict, and Mailpit got
+    "Overbooked: Dhara, Tue, 4 May 2027";
+  - a guest cancel on the stand-in arrived as CANCELLED;
+  - bad payloads get 400, GET gets 405.
+- Not checked: the admin `/channel` page in a browser. It needs a signed-in session.
+
+### Problems hit
+
+- Each fresh mock restarted its ids, so tests collided with external ids from earlier tests.
+  Each test now seeds `b24mock:seq` with its own range.
+- Channel tests passed alone but failed in the full suite on a unique `Room.number`: the
+  payments tests also used 800+. Channel tests moved to 600+.
+
+### Next
+
+- Sign in and walk `/channel`: link rooms, book as a Booking.com guest, overbook, cancel.
+- The dev database keeps the walk-through data: Dhara and Jala linked to Beds24 ids 501 and
+  502, and three bookings in April and May 2027 (one cancelled, one overbooked).
+- Step 7: production images in GHCR, `compose.prod.yml`, the CloudPanel proxy, backups.
+- With a real Beds24 account: set the token, webhook key and room ids, and confirm blackout
+  closes nights on Booking.com.
+
+---
+
 ## 2026-10-05 — Phase 1 step 5: admin
 
 ### Done

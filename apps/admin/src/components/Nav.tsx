@@ -8,6 +8,7 @@ const LINKS = [
   { href: '/reservations', label: 'Bookings' },
   { href: '/rates', label: 'Rates' },
   { href: '/photos', label: 'Photos' },
+  { href: '/channel', label: 'Booking.com' },
   { href: '/settings', label: 'Settings' },
 ];
 
