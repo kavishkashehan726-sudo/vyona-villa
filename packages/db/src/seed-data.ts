@@ -70,4 +70,5 @@ export const SETTINGS: Record<string, unknown> = {
   chargeCurrency: 'USD', // switch to LKR if the PayHere account can't settle USD
   checkInTime: '14:00', // placeholder
   checkOutTime: '11:00', // placeholder
+  payAtVilla: false, // client to decide whether guests may pay on arrival
 };

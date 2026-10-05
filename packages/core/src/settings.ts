@@ -10,6 +10,8 @@ export type BookingSettings = PricingSettings & {
   chargeCurrency: 'USD' | 'LKR';
   checkInTime: string;
   checkOutTime: string;
+  /** Lets guests confirm without paying online. Off: every booking goes through PayHere. */
+  payAtVilla: boolean;
 };
 
 export const DEFAULT_SETTINGS: BookingSettings = {
@@ -21,6 +23,7 @@ export const DEFAULT_SETTINGS: BookingSettings = {
   chargeCurrency: 'USD',
   checkInTime: '14:00',
   checkOutTime: '11:00',
+  payAtVilla: false,
 };
 
 type Db = Pick<typeof prisma, 'setting' | 'rateRule'>;

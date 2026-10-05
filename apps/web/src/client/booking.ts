@@ -1,16 +1,18 @@
 // Booking widget: Dates -> Details -> Confirm, ported from the prototype.
-// The calendar now shows real availability and prices from /api/calendar
-// (the SRS states: available / reserved = on hold / booked). The confirm step
-// is still a mock until step 4 adds the hold and PayHere: it marks the nights
-// booked for this session and nothing leaves the browser.
+// The calendar shows real availability and prices from /api/calendar (the SRS
+// states: available / reserved = on hold / booked). "Review booking" holds the
+// room on the server (POST /api/bookings) and the confirm step shows the
+// server's price and deadline. "Continue to payment" hands the guest to
+// PayHere, which returns them to /book/[ref]; going back releases the hold.
 //
 // One widget per page load. It lives in the page's booking section when the
 // page has one (mountBooking) and moves into the drawer when a
 // [data-open-booking] button is pressed anywhere.
 
 import { DAY_MS, toIso, today } from '@vyona/core/dates';
-import { quote } from '@vyona/core/pricing';
+import { quote, type Quote } from '@vyona/core/pricing';
 import { boot } from './boot';
+import { call, payByCard, rememberHold, type ApiError } from './checkout';
 import { photo } from './images';
 import { getCurrency, money, onCurrency, setCurrency, type Currency } from './store';
 import { $, $$, esc, lockScroll, toast } from './ui';
@@ -44,6 +46,10 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 // Per room and month: the nights, a pending fetch, or 'error'.
 const months = new Map<string, Map<number, Day> | Promise<void> | 'error'>();
 const monthKey = (slug: string, y: number, m: number) => `${slug}:${y}-${m}`;
+/** Forget a room's nights after a hold changed them; they load again on view. */
+const invalidate = (slug: string) => {
+  for (const k of [...months.keys()]) if (k.startsWith(`${slug}:`)) months.delete(k);
+};
 const ymOf = (n: number) => {
   const d = toDate(n);
   return { y: d.getUTCFullYear(), m: d.getUTCMonth() };
@@ -107,9 +113,16 @@ const S = {
   msg: PICK_IN,
   guest: { name: '', email: '', phone: '', country: '', arrival: '14:00', notes: '' } as Guest,
   errors: {} as Partial<Record<GuestKey, string>>,
-  pay: 'villa',
-  holdUntil: 0,
+  pay: 'card' as 'card' | 'villa',
+  /** The server hold: its private id, public ref, deadline and price. */
+  holdId: '',
   ref: '',
+  holdUntil: 0,
+  quote: null as Quote | null,
+  /** What the widget is waiting for, if anything. */
+  busy: '' as '' | 'hold' | 'pay',
+  /** A server message for the details or confirm step. */
+  note: '',
 };
 
 let root: HTMLElement | null = null;
@@ -182,14 +195,17 @@ function summary() {
   if (S.start === null || S.end === null) {
     return `<dl class="bk__summary"><dt>${esc(room.name)}, the ${esc(room.element)} room</dt><dd>from ${money(room.baseRate)} / night</dd></dl>`;
   }
-  const q = stayQuote(S.start, S.end);
+  // The confirm step shows the price the server held, not the browser's estimate.
+  const q = S.step >= 3 && S.quote ? S.quote : stayQuote(S.start, S.end);
+  // Itemised lines keep their cents so they add up to the total.
+  const exact = { exact: true };
   const st = boot().settings;
   return `<dl class="bk__summary" aria-live="polite">
     <dt>${fmt(S.start)} → ${fmt(S.end)}</dt><dd>${plural(q.nights.length, 'night')}</dd>
-    <dt>${esc(room.name)} · ${plural(S.guests, 'guest')}</dt><dd>${money(q.subtotal)}</dd>
-    ${q.discount ? `<dt>Long-stay saving (${st.longStayNights}+ nights)</dt><dd>−${money(q.discount)}</dd>` : ''}
-    <dt>Service charge (${st.serviceChargePercent}%)</dt><dd>${money(q.serviceCharge)}</dd>
-    <dt class="bk__total">Total</dt><dd class="bk__total" data-bk-total>${money(q.total)}</dd>
+    <dt>${esc(room.name)} · ${plural(S.guests, 'guest')}</dt><dd>${money(q.subtotal, exact)}</dd>
+    ${q.discount ? `<dt>Long-stay saving (${st.longStayNights}+ nights)</dt><dd>−${money(q.discount, exact)}</dd>` : ''}
+    <dt>Service charge (${st.serviceChargePercent}%)</dt><dd>${money(q.serviceCharge, exact)}</dd>
+    <dt class="bk__total">Total</dt><dd class="bk__total" data-bk-total>${money(q.total, exact)}</dd>
   </dl>`;
 }
 
@@ -257,13 +273,13 @@ function stepDetails() {
   const g = S.guest;
   const inv = (k: GuestKey) => (S.errors[k] ? 'aria-invalid="true"' : '');
   return `
-    <p class="bk__msg">Who's staying? We only use this to confirm your booking.</p>
+    <p class="bk__msg" role="status">${esc(S.note || "Who's staying? We only use this to confirm your booking.")}</p>
     <div class="bk__row">
       ${field('bk-name', 'Full name', `<input id="bk-name" data-g="name" autocomplete="name" value="${esc(g.name)}" ${inv('name')} aria-describedby="bk-name-err">`, 'name')}
       ${field('bk-email', 'Email', `<input id="bk-email" type="email" data-g="email" autocomplete="email" value="${esc(g.email)}" ${inv('email')} aria-describedby="bk-email-err">`, 'email')}
     </div>
     <div class="bk__row">
-      ${field('bk-phone', 'Phone or WhatsApp (optional)', `<input id="bk-phone" type="tel" data-g="phone" autocomplete="tel" value="${esc(g.phone)}">`, 'phone')}
+      ${field('bk-phone', 'Phone or WhatsApp', `<input id="bk-phone" type="tel" data-g="phone" autocomplete="tel" placeholder="+94 77 123 4567" value="${esc(g.phone)}" ${inv('phone')} aria-describedby="bk-phone-err">`, 'phone')}
       ${field('bk-country', 'Country', `<select id="bk-country" data-g="country" autocomplete="country-name">${COUNTRIES.map(
         (c) => `<option value="${c}" ${c === g.country ? 'selected' : ''}>${c || 'Select'}</option>`,
       ).join('')}</select>`, 'country')}
@@ -277,7 +293,9 @@ function stepDetails() {
     ${summary()}
     <div class="bk__actions">
       <button type="button" class="btn btn--line btn--sm" data-bk-back>Back to dates</button>
-      <button type="button" class="btn btn--olive magnetic" data-bk-next>Review booking</button>
+      <button type="button" class="btn btn--olive magnetic" data-bk-next ${S.busy ? 'disabled aria-busy="true"' : ''}>${
+        S.busy === 'hold' ? 'Holding your dates…' : 'Review booking'
+      }</button>
     </div>`;
 }
 
@@ -294,16 +312,31 @@ function stepConfirm() {
       </div>
     </div>
     <p class="bk__msg" data-bk-hold role="timer"></p>
-    <fieldset class="bk__pay" style="border:0;padding:0">
-      <legend class="field__label" style="font-family:var(--sans);font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:var(--taupe);margin-bottom:.4rem">How would you like to pay?</legend>
-      <label><input type="radio" name="bk-pay" value="villa" ${S.pay === 'villa' ? 'checked' : ''}> Pay at the villa on arrival</label>
-      <label><input type="radio" name="bk-pay" value="card" ${S.pay === 'card' ? 'checked' : ''}> Card now (demo, no charge is made)</label>
-    </fieldset>
+    ${S.note ? `<p class="bk__msg bk__msg--error" role="alert">${esc(S.note)}</p>` : ''}
+    ${payChoice()}
     ${summary()}
     <div class="bk__actions">
-      <button type="button" class="btn btn--line btn--sm" data-bk-back>Back to details</button>
-      <button type="button" class="btn btn--olive magnetic" data-bk-confirm>Confirm booking</button>
+      <button type="button" class="btn btn--line btn--sm" data-bk-back ${S.busy ? 'disabled' : ''}>Back to details</button>
+      <button type="button" class="btn btn--olive magnetic" data-bk-confirm ${S.busy ? 'disabled aria-busy="true"' : ''}>${
+        S.busy === 'pay'
+          ? S.pay === 'villa' ? 'Confirming…' : 'Opening PayHere…'
+          : S.pay === 'villa' ? 'Confirm booking' : 'Continue to payment'
+      }</button>
     </div>`;
+}
+
+function payChoice() {
+  const st = boot().settings;
+  const charged = `Charged in ${st.chargeCurrency === 'LKR' ? 'Sri Lankan rupees' : 'US dollars'}.`;
+  const card = `Pay securely with PayHere: Visa, Mastercard, Amex or a Sri Lankan wallet. ${charged}`;
+  if (!st.payAtVilla) return `<p class="bk__paynote">${card}</p>`;
+  return `
+    <fieldset class="bk__pay">
+      <legend class="field__label">How would you like to pay?</legend>
+      <label><input type="radio" name="bk-pay" value="card" ${S.pay === 'card' ? 'checked' : ''}> Card now, with PayHere</label>
+      <label><input type="radio" name="bk-pay" value="villa" ${S.pay === 'villa' ? 'checked' : ''}> At the villa on arrival</label>
+    </fieldset>
+    ${S.pay === 'card' ? `<p class="bk__paynote">${card}</p>` : ''}`;
 }
 
 function stepDone() {
@@ -313,9 +346,14 @@ function stepDone() {
       <p class="eyebrow">Booking confirmed</p>
       <h3 class="h2" style="margin-bottom:.8rem">See you in Weligama, ${esc(S.guest.name.trim().split(' ')[0])}.</h3>
       <p>${esc(current().name)} · ${fmt(S.start!)} → ${fmt(S.end!)}</p>
-      <p class="bk__ref">Reference ${S.ref}</p>
-      <p class="proto-note" style="margin-bottom:1.4rem">Preview: nothing is booked, emailed or charged yet. Online payment with PayHere arrives in the next build step; the live site then sends a confirmation email and updates Booking.com straight away.</p>
-      <button type="button" class="btn btn--olive" data-bk-restart>Book another room</button>
+      <p class="bk__ref">Reference ${esc(S.ref)}</p>
+      <p>We've emailed your confirmation to ${esc(S.guest.email.trim())}.${
+        S.quote ? ` You'll pay ${money(S.quote.total, { exact: true })} at the villa on arrival.` : ''
+      }</p>
+      <p class="bk__done-actions">
+        <a class="link-caps" href="/book/${encodeURIComponent(S.ref)}">View your booking</a>
+        <button type="button" class="btn btn--olive" data-bk-restart>Book another room</button>
+      </p>
     </div>`;
 }
 
@@ -326,7 +364,7 @@ function focusedSelector() {
     if (a.dataset[k]) return `[data-${k}="${a.dataset[k]}"]`;
   }
   if (a.id) return `#${a.id}`;
-  for (const attr of ['data-bk-next', 'data-bk-clear', 'data-bk-retry']) if (a.hasAttribute(attr)) return `[${attr}]`;
+  for (const attr of ['data-bk-next', 'data-bk-clear', 'data-bk-retry', 'data-bk-confirm']) if (a.hasAttribute(attr)) return `[${attr}]`;
   return undefined;
 }
 
@@ -403,6 +441,7 @@ function validate() {
   const e: typeof S.errors = {};
   if (g.name.trim().length < 2) e.name = 'Enter the name the booking is for.';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(g.email.trim())) e.email = 'Enter an email address like name@example.com.';
+  if (g.phone.replace(/\D/g, '').length < 6) e.phone = 'Enter a phone or WhatsApp number, with the country code.';
   S.errors = e;
   return Object.keys(e).length === 0;
 }
@@ -415,10 +454,7 @@ function tickHold() {
     const left = Math.max(0, S.holdUntil - Date.now());
     if (left === 0) {
       clearInterval(holdTimer);
-      S.step = 1;
-      S.end = null;
-      S.msg = 'Your hold expired, so the dates were released. Choose them again to continue.';
-      return render();
+      return backToDates('Your hold ran out and the dates were released. Choose them again to continue.');
     }
     const mm = Math.floor(left / 60000);
     const ss = String(Math.floor((left % 60000) / 1000)).padStart(2, '0');
@@ -435,10 +471,83 @@ function goto(step: number, focus?: string) {
   root?.closest('.drawer__sheet')?.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function mockRef() {
-  const chars = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
-  const r = crypto.getRandomValues(new Uint8Array(5));
-  return `VY-${[...r].map((b) => chars[b % chars.length]).join('')}`;
+/** Forgets the hold locally; the server expires it on its own. */
+function forgetHold() {
+  clearInterval(holdTimer);
+  Object.assign(S, { holdId: '', holdUntil: 0, quote: null, busy: '', note: '' });
+  invalidate(S.room);
+}
+
+/** The guest stepped back: give the nights back now rather than in 15 minutes. */
+function releaseHold() {
+  if (S.holdId) void fetch(`/api/bookings/${S.holdId}`, { method: 'DELETE', keepalive: true }).catch(() => {});
+  forgetHold();
+}
+
+function backToDates(msg: string, keepStart = true) {
+  forgetHold();
+  if (!keepStart) S.start = null;
+  S.end = null;
+  S.msg = msg;
+  goto(1);
+}
+
+const DATE_ERRORS = ['UNAVAILABLE', 'MIN_STAY', 'INVALID_DATES', 'TOO_LONG', 'TOO_FAR_AHEAD', 'TOO_MANY_GUESTS', 'ROOM_NOT_FOUND'];
+
+async function hold() {
+  S.busy = 'hold';
+  S.note = '';
+  render('[data-bk-next]');
+  const res = await call<{ id: string; ref: string; holdUntil: string; quote: Quote }>('/api/bookings', {
+    room: S.room,
+    checkIn: toIso(S.start!),
+    checkOut: toIso(S.end!),
+    guests: S.guests,
+    guest: S.guest,
+  });
+  S.busy = '';
+  if (!res.ok) return holdFailed(res.error);
+  Object.assign(S, { holdId: res.data.id, ref: res.data.ref, holdUntil: Date.parse(res.data.holdUntil), quote: res.data.quote });
+  rememberHold(S.ref, S.holdId);
+  invalidate(S.room);
+  goto(3, '[data-bk-confirm]');
+}
+
+function holdFailed(e: ApiError) {
+  if (e.field && e.field in S.guest) {
+    S.errors = { [e.field]: e.message };
+    return render(`#bk-${e.field}`);
+  }
+  if (DATE_ERRORS.includes(e.error)) {
+    invalidate(S.room);
+    return backToDates(e.message, e.error !== 'UNAVAILABLE');
+  }
+  S.note = e.message;
+  render('[data-bk-next]');
+}
+
+async function confirm() {
+  S.busy = 'pay';
+  S.note = '';
+  render('[data-bk-confirm]');
+  if (S.pay === 'card') {
+    const res = await payByCard(S.holdId);
+    // On success the browser is already leaving for PayHere: stay busy.
+    if (!res.ok) payFailed(res.error);
+    return;
+  }
+  const res = await call<{ ref: string }>(`/api/bookings/${S.holdId}/pay`, { method: 'villa' });
+  if (!res.ok) return payFailed(res.error);
+  forgetHold();
+  toast(`Booking confirmed. Your reference is ${S.ref}.`);
+  goto(4);
+}
+
+function payFailed(e: ApiError) {
+  S.busy = '';
+  if (e.error === 'HOLD_EXPIRED' || e.error === 'UNAVAILABLE') return backToDates(e.message, e.error === 'HOLD_EXPIRED');
+  S.note = e.message;
+  render('[data-bk-confirm]');
 }
 
 function onClick(e: MouseEvent) {
@@ -467,33 +576,21 @@ function onClick(e: MouseEvent) {
     S.msg = PICK_IN;
     return render();
   }
-  if (t.hasAttribute('data-bk-back')) return goto(S.step - 1);
+  if (t.hasAttribute('data-bk-back')) {
+    if (S.step === 3) releaseHold();
+    return goto(S.step - 1);
+  }
   if (t.hasAttribute('data-bk-next')) {
     if (S.step === 1) return goto(2, '#bk-name');
     if (S.step === 2) {
-      if (!validate()) return render(S.errors.name ? '#bk-name' : '#bk-email');
-      S.holdUntil = Date.now() + boot().settings.holdMinutes * 60000;
-      return goto(3, '[data-bk-confirm]');
+      if (!validate()) return render(`#bk-${Object.keys(S.errors)[0]}`);
+      return void hold();
     }
   }
-  if (t.hasAttribute('data-bk-confirm')) {
-    t.disabled = true;
-    t.textContent = 'Confirming…';
-    setTimeout(() => {
-      // Mock until step 4: mark the nights booked in this tab's calendar.
-      for (let d = S.start!; d < S.end!; d++) {
-        const c = months.get(monthKey(S.room, ymOf(d).y, ymOf(d).m));
-        const day = c instanceof Map ? c.get(d) : undefined;
-        if (day) day.state = 'booked';
-      }
-      S.ref = mockRef();
-      toast(`Booking confirmed. Your reference is ${S.ref}.`);
-      goto(4);
-    }, 900);
-    return;
-  }
+  if (t.hasAttribute('data-bk-confirm')) return void confirm();
   if (t.hasAttribute('data-bk-restart')) {
-    Object.assign(S, { start: null, end: null, errors: {}, msg: PICK_IN });
+    forgetHold();
+    Object.assign(S, { start: null, end: null, errors: {}, msg: PICK_IN, ref: '' });
     goto(1);
   }
 }
@@ -510,7 +607,10 @@ function onInput(e: Event) {
       if (err) err.textContent = '';
     }
   }
-  if (t.name === 'bk-pay') S.pay = t.value;
+  if (t.name === 'bk-pay') {
+    S.pay = t.value === 'villa' ? 'villa' : 'card';
+    render(`input[value="${S.pay}"]`);
+  }
 }
 
 function selectRoom(slug: string) {
@@ -539,9 +639,10 @@ function selectRoom(slug: string) {
 /** Pre-select a room, resetting a finished or half-finished booking. */
 function openOn(slug: string | undefined) {
   if (!slug || !roomBySlug(slug)) return;
+  if (S.step === 3) releaseHold();
   selectRoom(slug);
   if (S.step > 1 && S.step < 4) S.step = 1;
-  if (S.step === 4) Object.assign(S, { step: 1, start: null, end: null, msg: PICK_IN });
+  if (S.step === 4) Object.assign(S, { step: 1, start: null, end: null, msg: PICK_IN, ref: '' });
 }
 
 /* ------------------------------------------------------------------ drawer */
@@ -643,6 +744,15 @@ export function initBooking() {
     previewRange(b ? Number(b.dataset.day) : null);
   });
   root.addEventListener('pointerleave', () => previewRange(null));
+  // Back from PayHere via the browser's back button: the page comes out of the
+  // back/forward cache still saying "Opening PayHere…".
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted && S.busy) {
+      S.busy = '';
+      render();
+      if (S.step === 3) tickHold();
+    }
+  });
   onCurrency(() => {
     if (S.step !== 2) render(focusedSelector());
   });

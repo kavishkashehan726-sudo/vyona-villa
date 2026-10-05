@@ -18,7 +18,12 @@ export type BookingRoom = {
 export type BootData = {
   photos: Record<string, ClientPhoto>;
   rooms: BookingRoom[];
-  settings: PricingSettings & { lkrPerUsd: number; holdMinutes: number };
+  settings: PricingSettings & {
+    lkrPerUsd: number;
+    holdMinutes: number;
+    payAtVilla: boolean;
+    chargeCurrency: 'USD' | 'LKR';
+  };
 };
 
 let data: BootData | null = null;
@@ -31,7 +36,15 @@ export function boot(): BootData {
     data = {
       photos: {},
       rooms: [],
-      settings: { serviceChargePercent: 10, longStayNights: 7, longStayPercent: 10, lkrPerUsd: 300, holdMinutes: 15 },
+      settings: {
+        serviceChargePercent: 10,
+        longStayNights: 7,
+        longStayPercent: 10,
+        lkrPerUsd: 300,
+        holdMinutes: 15,
+        payAtVilla: false,
+        chargeCurrency: 'USD',
+      },
     };
   }
   return data;

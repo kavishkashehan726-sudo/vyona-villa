@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./pricing": "./src/pricing.ts",
-    "./dates": "./src/dates.ts"
+    "./dates": "./src/dates.ts",
+    "./payhere": "./src/payhere.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -14,7 +15,8 @@
   },
   "dependencies": {
     "@vyona/db": "workspace:*",
-    "ioredis": "^6.0.0"
+    "ioredis": "^6.0.0",
+    "bullmq": "^6.3.11"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

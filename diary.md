@@ -5,6 +5,76 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-05 — Phase 1 step 4: booking and PayHere
+
+### Done
+
+- **Core:** `payhere.ts` (pure: checkout hash, notify signature check, sandbox/live/mock
+  config) and `payments.ts` (start a payment, confirm at the villa, release a hold, apply a
+  notify). Queues gained job names, a shared queue helper, and `afterConfirm` / `needsRefund`.
+- **API** (route handlers in `apps/web`):
+  - `POST /api/bookings` holds a room;
+  - `DELETE /api/bookings/[id]` releases it;
+  - `POST /api/bookings/[id]/pay` returns a signed PayHere form, or confirms a pay-at-villa
+    booking;
+  - `POST /api/payhere/notify` verifies and applies PayHere's notify.
+- **Mock gateway:** `/book/pay/mock` stands in for PayHere without a merchant account. It's
+  development only and verifies the same hash.
+- **Widget:**
+  - "Review booking" holds the room on the server, and the confirm step shows the server's
+    quote and deadline.
+  - "Continue to payment" goes to PayHere. Back releases the hold.
+  - Phone is now required. Totals show cents.
+- **`/book/[ref]`:**
+  - confirmed ("See you in Weligama.", how it was paid, check-in and check-out times);
+  - held (waits for the notify, or offers "Try paying again");
+  - expired (with a refund note if the payment came too late);
+  - cancelled.
+- **Worker:**
+  - sweeps expired holds every minute;
+  - sends the guest confirmation, the owner's new-booking email and the owner's refund alert
+    through nodemailer (Mailpit in dev).
+- `payAtVilla` setting, off by default. `MAIL_FROM` and `NEXT_PUBLIC_SITE_URL` are passed
+  through turbo.
+
+### Checked
+
+- Typecheck clean. Core tests 49/49, including:
+  - three concurrent notifies → one confirmation;
+  - a late failure can't undo a payment;
+  - a late payment with the nights free → confirmed;
+  - a late payment with the nights taken → refund.
+- `next build` passes; bullmq bundles fine.
+- End to end in Playwright and Mailpit:
+  - book → cancel at the gateway → try again → pay → confirmed page → guest and owner emails;
+  - Back releases the hold;
+  - the second hold on the same nights gets 409;
+  - an expired hold returns 410; pay-at-villa while off returns 400;
+  - a late payment after another guest took the nights produces the "Refund needed" email
+    and the refund note;
+  - the sweep marks the stale hold EXPIRED;
+  - a `<script>` guest name is escaped in both emails.
+- 320 and 390 px: no horizontal scroll, and no console errors or server errors.
+
+### Problems hit
+
+- The `expireHolds` test expected zero holds globally, but the payments tests leave holds behind.
+  It now checks its own reservation, and core test files run serially.
+- The confirmed page said "Paid by card: $338" for a US$337.70 charge, because prices round to
+  whole dollars. Totals and amounts charged now always show cents.
+- `PaymentStatus` first took a prop named `ref`, which React reserves.
+- At 320 px "Check-out" broke mid-word in the booking summary. The labels no longer wrap.
+
+### Next
+
+- Step 5, admin: login, the room × date grid (blocks, prices), rate rules and settings
+  (including `payAtVilla` and the charge currency), the reservations list with cancel and
+  manual bookings, and photo upload.
+- A local `.env` (gitignored) sets `ADMIN_EMAIL=owner@vyona.test` so the owner emails reach
+  Mailpit.
+
+---
+
 ## 2026-10-05 — Phase 1 step 3: public site
 
 ### Done

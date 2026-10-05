@@ -16,7 +16,16 @@ import { nightsOf, toDate } from './dates';
 import { quote } from './pricing';
 import { loadRules, loadSettings } from './settings';
 
-export type BookingErrorCode = StayError | 'ROOM_NOT_FOUND' | 'TOO_MANY_GUESTS' | 'MIN_STAY' | 'UNAVAILABLE';
+export type BookingErrorCode =
+  | StayError
+  | 'ROOM_NOT_FOUND'
+  | 'TOO_MANY_GUESTS'
+  | 'MIN_STAY'
+  | 'UNAVAILABLE'
+  /** The hold ran out, or there is no such hold. */
+  | 'HOLD_EXPIRED'
+  /** Already confirmed or cancelled. */
+  | 'NOT_HELD';
 
 export class BookingError extends Error {
   constructor(

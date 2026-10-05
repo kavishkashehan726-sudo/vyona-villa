@@ -130,7 +130,8 @@ describe('holdRoom', () => {
 describe('expireHolds', () => {
   it('expires holds past their deadline and frees their nights', async () => {
     const res = await holdRoom(stay(0, 2));
-    expect(await expireHolds(new Date())).toBe(0);
+    await expireHolds(new Date());
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: res.id } })).status).toBe('HOLD');
     expect(await expireHolds(new Date(Date.now() + 16 * 60_000))).toBeGreaterThanOrEqual(1);
 
     expect((await prisma.reservation.findUniqueOrThrow({ where: { id: res.id } })).status).toBe('EXPIRED');

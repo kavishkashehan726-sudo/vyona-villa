@@ -13,7 +13,7 @@ The full system is specified in [docs/booking-engine-spec.md](docs/booking-engin
   domain until the cut-over. It is frozen; it is the visual reference for the port, not edited.
 - **Phase 1 (current):** the real system in a pnpm + Turborepo monorepo. Build order:
   1 scaffold ✓ · 2 core ✓ · 3 public site ✓ · 4 booking +
-  PayHere · 5 admin · 6 Beds24 · 7 production. Client feedback lives in `client updates/`
+  PayHere ✓ · 5 admin · 6 Beds24 · 7 production. Client feedback lives in `client updates/`
   (gitignored) and is summarised under *Content decisions*.
 
 ## Hard rules
@@ -35,18 +35,24 @@ The full system is specified in [docs/booking-engine-spec.md](docs/booking-engin
 apps/
   web/              Next 16 public site + public API as route handlers (:3000)
     src/app/        pages: / /stay /stay/[slug] /explore /explore/[pillar] /about /gallery
-                    /contact /book /book/[ref]; api/calendar; media/[...path] serves .media/
+                    /contact /book /book/[ref] /book/pay/mock; media/[...path] serves .media/
+    src/app/api/    calendar; bookings (POST hold), bookings/[id] (DELETE release),
+                    bookings/[id]/pay; payhere/notify; payhere/mock (test gateway's form)
     src/components/ server sections (sections/*), Photo, Nav, Footer, BookBar, RoomDialog,
-                    Runtime (global effects, once) and PageEffects (per-page effects)
+                    PaymentStatus, Runtime (global effects, once), PageEffects (per page)
     src/client/     the prototype's js/ ported to TS: booking, hero, motion, ripple, cursor,
-                    magnetic, villa3d + water, gallery, images, capability, store, boot
-    src/lib/        site.ts + media.ts (server only, Prisma); rooms, content, gallery, villa
-                    (pure data, safe in client code)
+                    magnetic, villa3d + water, gallery, images, capability, store, boot;
+                    checkout (API calls, PayHere form post, hold id in sessionStorage)
+    src/lib/        site.ts + media.ts (server only, Prisma); booking.ts (request parsing,
+                    error responses, hold rate limit), payhere.ts (notify → queue);
+                    rooms, content, gallery, villa (pure data, safe in client code)
   admin/            Next 16 dashboard, admin.vyonaweligama.com (:3001)
-  worker/           BullMQ worker: Beds24 sync, hold expiry, emails
+  worker/           BullMQ worker: hold expiry sweep (every minute), emails (mail.ts),
+                    Beds24 sync (step 6)
 packages/
   db/               Prisma 7 schema, migrations, idempotent seed (seed-data.ts = client brief)
-  core/             pricing, availability, booking transaction, PayHere, Beds24, queue names
+  core/             pricing, availability, booking (hold), payments (pay, confirm, release,
+                    notify), payhere (hash, verify; pure), queues (names, afterConfirm)
   ui/               tokens.css (Tailwind 4 @theme), icons.tsx, logo.tsx (swap point for the
                     official logo)
 docker/             dev.Dockerfile
@@ -154,6 +160,29 @@ elements, pointed-oval seed logo.
   `PageEffects` goes last in each page and starts/stops hero, motion, gallery, map and the 3D
   villa, so they rebind on client navigation.
 - Client components import from `@/lib/rooms`, never `@/lib/site` (which pulls in Prisma).
+- **Checkout flow.** "Review booking" holds the room (POST /api/bookings). The confirm step
+  shows the server's quote and deadline. "Continue to payment" opens a fresh Payment
+  (`${ref}-N`, one per attempt) and posts a signed form to PayHere, which returns the guest to
+  `/book/[ref]?payment=done|cancelled`. Only the notify confirms. `PaymentStatus` refreshes the
+  page for 90 s while it waits, and offers "Try paying again" after a cancel. Back from the
+  confirm step releases the hold.
+- **The reservation id (cuid) is the secret** for paying and releasing. It is never rendered;
+  the widget keeps it in sessionStorage (`vy-hold:<ref>`). The ref is public, so `/book/[ref]`
+  shows no guest name or email.
+- **Mock gateway:** without PayHere credentials and outside production, checkout goes to
+  `/book/pay/mock`, which verifies the hash and signs a notify like PayHere's. In production
+  without credentials, card payment returns 503. `/api/payhere/notify` is 404 in mock mode.
+- **Notify handling:** the Payment row is locked first, so retried notifies are idempotent. A
+  late cancel or failure never undoes PAID. A payment that lands after its hold expired takes the
+  nights back if they are free; otherwise the owner gets a "Refund needed" email.
+- **`payAtVilla` setting** (default off): when on, the confirm step offers "At the villa on
+  arrival", recorded as a `VILLA` Payment.
+- Phone is required (PayHere needs it); PayHere's address and city get "Not provided".
+- Holds are rate-limited in memory: 8 per IP per 15 minutes (cf-connecting-ip first).
+- Emails go from the worker via nodemailer: guest confirmation, owner booking and owner refund,
+  to `ADMIN_EMAIL`. Mailpit catches them in dev. Guest input is HTML-escaped.
+- Totals and amounts charged show cents (`exact` in `formatMoney`, `<Price exact>`), so the
+  page matches the card statement. Nightly prices stay rounded.
 
 ## Content decisions
 
@@ -171,8 +200,7 @@ elements, pointed-oval seed logo.
 - Currency: USD by default, LKR toggle at a flat `LKR_PER_USD = 300` (placeholder rate).
 - Prototype booking is a mock (FNV hash of the date). In `apps/web` the calendar is real:
   `/api/calendar` returns each night's state, price and min stay from `packages/core`. Nightly rate
-  +20% Dec–Mar, +12% Fri/Sat; 10% service charge; 10% off at 7+ nights; 15-minute hold. The
-  confirm step is still a mock until step 4 (it marks the nights booked in that tab only).
+  +20% Dec–Mar, +12% Fri/Sat; 10% service charge; 10% off at 7+ nights; 15-minute hold.
 - About and the Explore pillar pages carry draft or placeholder copy, marked on the page.
 - Contact details, address and social handles are placeholders, marked on the page.
 
@@ -202,6 +230,15 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
   winner's new reservation. `holdRoom` locks with one statement and reads with the next. The
   concurrency test pre-creates the RoomDay rows, because fresh rows are serialised by the
   primary-key insert instead and hide this bug.
+- **Lock order: Payment → RoomDay → Reservation**, in every transaction (holdRoom, expireHolds,
+  confirm, release, notify). Any other order can deadlock against the expiry sweep.
+- BullMQ custom job ids may not contain `:`. Ids are deterministic (`guest-<id>`,
+  `refund-<orderId>`) and completed jobs are kept 7 days, so a retried notify sends nothing twice.
+- Core test files run one at a time (`fileParallelism: false`): `expireHolds` sweeps every room,
+  so a parallel file would expire another file's holds.
+- Turbo strips `MAIL_FROM` and `NEXT_PUBLIC_SITE_URL` from the worker unless they are in
+  `globalPassThroughEnv` (Next apps get `NEXT_PUBLIC_*` by inference, plain Node apps don't).
+- `ref` is a reserved React prop: `PaymentStatus` takes `bookingRef`.
 - Core tests run against a `vyona_test` database that `packages/core/test/global-setup.ts`
   creates, migrates and truncates; the dev data is never touched.
 
@@ -240,7 +277,8 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
 
 ## Waiting on the client
 
-Official logo, Tara's keywords, About copy and host photos, Explore subpage copy, real contact
+Whether guests may pay at the villa (`payAtVilla`), the PayHere charge currency (USD or LKR),
+official logo, Tara's keywords, About copy and host photos, Explore subpage copy, real contact
 details and address, high-res photos (beach, food, video), PayHere merchant account, Beds24
 account, SMTP provider, tax and service-charge rules, check-in/out times, cancellation policy.
 Placeholders are marked on the page; nothing blocks on these.

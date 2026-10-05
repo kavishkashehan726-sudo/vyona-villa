@@ -607,6 +607,11 @@ hr { border: 0; margin: 0; }
 .bk__pay { display: grid; gap: 0.6rem; margin: 1rem 0; }
 .bk__pay label { display: flex; gap: 0.8rem; align-items: center; min-height: 52px; padding: 0.6rem 1rem; border: 1px solid rgb(43 42 38 / 0.15); border-radius: 10px; cursor: pointer; }
 .bk__pay input { accent-color: var(--olive); width: 18px; height: 18px; }
+.bk__pay { border: 0; padding: 0; }
+.bk__pay legend { font-family: var(--sans); font-size: 0.66rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--taupe); margin-bottom: 0.4rem; }
+.bk__paynote { font-family: var(--sans); font-size: 0.78rem; line-height: 1.6; color: var(--taupe); margin: 1rem 0; padding: 0.8rem 1rem; border-left: 2px solid var(--bronze); background: rgb(230 222 209 / 0.5); }
+.bk__msg--error { color: #8a3b2a; margin-top: 0.6rem; }
+.bk__done-actions { display: flex; flex-wrap: wrap; gap: 1rem 1.6rem; justify-content: center; align-items: center; margin-top: 1.4rem; }
 
 /* ==========================================================================
    Contact
@@ -814,8 +819,19 @@ dialog::backdrop { background: rgb(28 28 20 / 0.6); backdrop-filter: blur(4px); 
 
 /* Booking reference page */
 .ref { max-width: 44rem; margin: 0 auto; padding: var(--section) var(--gutter); text-align: center; }
-.ref .bk__summary { text-align: left; margin-top: 2rem; }
+.ref .bk__summary { text-align: left; margin-top: 2rem; grid-template-columns: auto 1fr; }
+.ref .bk__summary dt { white-space: nowrap; }
 .ref__status { display: inline-block; margin-bottom: 1rem; padding: 0.35rem 0.9rem; border: 1px solid var(--bronze); font-family: var(--sans); font-size: 0.66rem; letter-spacing: 0.22em; text-transform: uppercase; }
+.ref__mark { width: 72px; height: 52px; color: var(--olive); margin: 0 auto 1.2rem; display: block; }
+.ref__lead { max-width: 34rem; margin: 1rem auto 0; color: var(--taupe); line-height: 1.7; }
+.ref__lead strong { font-family: var(--sans); font-weight: 500; letter-spacing: 0.16em; color: var(--olive); }
+.ref__wait { display: flex; gap: 0.8rem; justify-content: center; align-items: center; margin-top: 1.6rem; font-family: var(--sans); font-size: 0.8rem; color: var(--taupe); }
+.ref__spinner { width: 16px; height: 16px; border: 1.5px solid rgb(168 139 94 / 0.3); border-top-color: var(--bronze); border-radius: 50%; animation: ref-spin 0.9s linear infinite; }
+@keyframes ref-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .ref__spinner { animation-duration: 3s; } }
+.ref__note { max-width: 34rem; margin: 1.6rem auto 0; font-family: var(--sans); font-size: 0.8rem; line-height: 1.6; color: var(--taupe); }
+.ref__note--error { color: #8a3b2a; }
+.mock-pay { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; align-items: center; margin-top: 2rem; }
 
 @media (max-width: 900px) {
   .story__block { grid-template-columns: minmax(0, 1fr); }

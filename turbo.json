@@ -8,6 +8,8 @@
     "DATABASE_URL",
     "REDIS_URL",
     "SMTP_URL",
+    "MAIL_FROM",
+    "NEXT_PUBLIC_SITE_URL",
     "MEDIA_DIR",
     "PAYHERE_*",
     "BEDS24_*",

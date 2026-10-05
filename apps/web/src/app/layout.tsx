@@ -88,7 +88,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <p>
             <strong>Preview</strong>{' '}
             <span className="proto-badge__long">
-              Prices, availability and contact details are placeholders. Nothing is really booked.
+              Prices and contact details are placeholders. Card payments go to a test gateway; nothing is charged.
             </span>
             <span className="proto-badge__short">Details are placeholders.</span>
           </p>

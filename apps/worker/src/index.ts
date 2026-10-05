@@ -1,12 +1,35 @@
 // Background worker: everything that must not block a guest's request.
-// Jobs are added by web and admin; handlers arrive in build steps 4 and 6.
+// Web and admin add the jobs; Beds24 handlers arrive in build step 6.
 
-import { QUEUE, createRedis } from '@vyona/core';
+import { JOB, QUEUE, createRedis, expireHolds, queue } from '@vyona/core';
 import { prisma } from '@vyona/db';
 import { Worker, type Job } from 'bullmq';
+import { sendGuestConfirmation, sendOwnerBooking, sendOwnerRefund } from './mail';
 
-async function handle(job: Job) {
-  console.log(`[${job.queueName}] ${job.name} #${job.id} — no handler yet`, job.data);
+type Data = { reservationId: string; orderId: string };
+
+const handlers: Record<string, (data: Data) => Promise<unknown>> = {
+  [JOB.expireHolds]: async () => {
+    const n = await expireHolds();
+    return n ? `expired ${n} hold${n === 1 ? '' : 's'}` : 'nothing to expire';
+  },
+  [JOB.guestConfirmation]: (d) => sendGuestConfirmation(d.reservationId),
+  [JOB.ownerBooking]: (d) => sendOwnerBooking(d.reservationId),
+  [JOB.ownerRefund]: (d) => sendOwnerRefund(d.reservationId, d.orderId),
+};
+
+async function handle(job: Job<Data>) {
+  const run = handlers[job.name];
+  if (!run) {
+    console.log(`[${job.queueName}] ${job.name} #${job.id} — no handler yet`, job.data);
+    return;
+  }
+  const result = await run(job.data);
+  // The sweep runs every minute; only log it when it did something.
+  if (job.name !== JOB.expireHolds || result !== 'nothing to expire') {
+    console.log(`[${job.queueName}] ${job.name} #${job.id}: ${result}`);
+  }
+  return result;
 }
 
 const workers = Object.values(QUEUE).map(
@@ -16,12 +39,21 @@ const workers = Object.values(QUEUE).map(
       .on('error', (err) => console.error(`[${name}]`, err.message)),
 );
 
+// Holds also stop counting the moment their deadline passes (every query checks
+// holdUntil); the sweep just tidies their status and frees the RoomDay rows.
+await queue(QUEUE.ops).upsertJobScheduler(
+  JOB.expireHolds,
+  { every: 60_000 },
+  { name: JOB.expireHolds, opts: { removeOnComplete: true, removeOnFail: 100 } },
+);
+
 await prisma.$queryRaw`SELECT 1`;
 console.log(`✓ worker up: queues ${Object.values(QUEUE).join(', ')}`);
 
 async function shutdown(signal: string) {
   console.log(`${signal}: closing workers`);
   await Promise.all(workers.map((w) => w.close()));
+  await queue(QUEUE.ops).close();
   await prisma.$disconnect();
   process.exit(0);
 }

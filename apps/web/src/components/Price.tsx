@@ -7,7 +7,7 @@ import { useSyncExternalStore } from 'react';
 import { boot } from '@/client/boot';
 import { formatMoney, getCurrency, getServerCurrency, onCurrency } from '@/client/store';
 
-export function Price({ cents }: { cents: number }) {
+export function Price({ cents, exact = false }: { cents: number; exact?: boolean }) {
   const cur = useSyncExternalStore(onCurrency, getCurrency, getServerCurrency);
-  return <>{formatMoney(cents, cur, cur === 'LKR' ? boot().settings.lkrPerUsd : 0)}</>;
+  return <>{formatMoney(cents, cur, cur === 'LKR' ? boot().settings.lkrPerUsd : 0, { exact })}</>;
 }
