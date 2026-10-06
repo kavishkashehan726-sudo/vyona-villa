@@ -144,8 +144,11 @@ holds host, user and path and is **gitignored** because the repo is public.
 **Phase 1** (runbook: [deploy/README.md](deploy/README.md)) runs under **PM2** as the site user,
 with Postgres 17 and Redis installed on the server. CI's `release` job (main only) runs
 `pnpm build` and `scripts/build-release.sh`, and keeps `vyona-release` (a tarball) for 30 days.
-`scripts/deploy-app.sh` finds the newest green run with `gh` and downloads the release to
-`.release/<sha>`. It rsyncs that to `releases/<sha>` with `--link-dest` against `current`, then
+`scripts/deploy-app.sh` finds the newest green run with `gh` and gets a signed download link for
+its artifact (valid about a minute; no GitHub token on the server). The server fetches it with
+`curl -K -` (the URL stays out of `ps`) and unpacks it into `releases/<sha>`, rsync
+`--link-dest` against `current`. Through the owner's connection the same download ran at
+40 KB/s; on the server it takes seconds. It then
 runs migrate, seed and photo import, switches `current`, deletes and starts the PM2 apps, and waits
 for both `/api/health`. The newest three releases are kept. `--tag <sha>` deploys one build
 (rolling back to a release still on the server skips migrations). `--images` uploads the

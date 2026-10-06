@@ -156,8 +156,8 @@ against Postgres and Redis services.
 The server runs the three apps under [PM2](https://pm2.keymetrics.io/), with Postgres and Redis
 installed alongside. CI checks every push. On `main` it also builds the release: the two Next
 apps as standalone servers, and the worker as a single bundle. The server never builds anything.
-[`scripts/deploy-app.sh`](scripts/deploy-app.sh) downloads the release, uploads only what
-changed, runs the migrations and restarts the apps. A nightly cron job backs up the database and
+[`scripts/deploy-app.sh`](scripts/deploy-app.sh) has the server fetch the release from CI,
+keeps only what changed, runs the migrations and restarts the apps. A nightly cron job backs up the database and
 photos.
 
 ```bash

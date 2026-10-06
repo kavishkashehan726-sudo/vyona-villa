@@ -22,11 +22,17 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
   again. It logs only when it acts. `deploy-app.sh` uploads it, and its restart takes the same
   `.deploy.lock`.
 - The runbook has a *Self-healing* table: what fails and what brings it back.
+- `deploy-app.sh` no longer downloads the release here and uploads it. It asks GitHub for the
+  artifact's signed download link (valid about a minute) and the server fetches it, with the URL
+  passed to `curl -K -` on stdin so it stays out of `ps` on the shared server. Unpacking goes
+  through `rsync --link-dest` against `current`, as before.
 
 ### Checked
 
 - Through Cloudflare: `/login` 200, `/api/health` 200, the sign-in page renders.
 - Postgres, Redis, nginx and cron are enabled at boot; all three apps online, no watchdog log.
+- The server-side fetch of `27a77c9` into a scratch folder: 23 s end to end, identical to the
+  deployed release except two runtime caches, all 13,369 files hard links to it.
 - Not run: the break-and-heal tests (SIGKILL, `pm2 kill`, a simulated reboot, stopped apps, an
   untracked copy on the admin port). Killing the production apps was refused by the
   permission check; the owner can run them.
@@ -40,7 +46,6 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ### Next
 
-- Let the server fetch the release in every deploy.
 - Cut-over once the client signs off; change the admin login once the real email exists.
 
 ---

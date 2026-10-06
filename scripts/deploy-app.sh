@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # Deploys the Phase 1 system (web, admin, worker) to the VPS, where PM2 runs it.
 # The release is the one CI built for a commit on main (scripts/build-release.sh); nothing is
-# built on the server. Needs `gh` signed in, to download CI's artifact.
+# built on the server. Needs `gh` signed in: it finds the CI run and asks GitHub for a short-lived
+# download link, which the server uses to fetch the release itself.
 #
 # Config lives in scripts/deploy.env (gitignored): DEPLOY_HOST, DEPLOY_USER, DEPLOY_PORT,
 # DEPLOY_KEY as for deploy.sh, plus DEPLOY_APP_DIR (the app folder on the server).
 # The server's own .env (from deploy/env.example) is written there by hand, once.
 #
 # Usage:
-#   scripts/deploy-app.sh              the newest green build of main: upload, migrate, switch, restart
+#   scripts/deploy-app.sh              the newest green build of main: fetch, migrate, switch, restart
 #   scripts/deploy-app.sh --tag <sha>  that commit's build; one still on the server is switched
 #                                      back to without migrating (this is the rollback)
 #   scripts/deploy-app.sh --images     also copy images/ up, for the photo import
@@ -101,20 +102,25 @@ if remote "[ -f releases/$SHA/REVISION ]"; then
   [ -n "$TAG" ] && ROLLBACK=1
   echo "→ already on the server"
 else
-  LOCAL="$ROOT/.release/$SHA"
-  if [ ! -f "$LOCAL/REVISION" ]; then
-    [ -n "${RUN:-}" ] || { echo "✗ no green CI run for $SHA (CI artifacts are kept 30 days)"; exit 1; }
-    echo "→ download from CI run $RUN"
-    rm -rf "$ROOT/.release/download" && mkdir -p "$LOCAL"
-    gh run download "$RUN" -n vyona-release -D "$ROOT/.release/download"
-    tar -xzf "$ROOT/.release/download/vyona.tar.gz" -C "$LOCAL" --strip-components=1
-    rm -rf "$ROOT/.release/download"
-  fi
-  # Files the current release already has become hard links: only what changed is sent and stored.
-  echo "→ upload"
-  remote "[ -e current ]" && LINK=(--link-dest="$APP/current/") || LINK=()
-  up --checksum --delete "${LINK[@]}" "$LOCAL/" "$TARGET:$APP/releases/$SHA.part/"
-  remote "rm -rf releases/$SHA && mv releases/$SHA.part releases/$SHA"
+  # The server downloads the artifact itself, from a signed URL that GitHub makes valid for about
+  # a minute: much faster than through this machine, and no GitHub token on the server. The URL
+  # reaches curl on stdin, never its arguments, where other users could see it in `ps`.
+  [ -n "${RUN:-}" ] || { echo "✗ no green CI run for $SHA (CI artifacts are kept 30 days)"; exit 1; }
+  ART=$(cd "$ROOT" && gh api "repos/{owner}/{repo}/actions/runs/$RUN/artifacts" \
+    -q '.artifacts[] | select(.name == "vyona-release" and (.expired | not)) | .id')
+  [ -n "$ART" ] || { echo "✗ CI run $RUN has no vyona-release artifact (kept 30 days)"; exit 1; }
+  URL=$(printf 'Authorization: Bearer %s\n' "$(gh auth token)" | curl -fsS -o /dev/null -H @- \
+    -w '%{redirect_url}' "https://api.github.com/repos/$(cd "$ROOT" && gh repo view --json nameWithOwner -q .nameWithOwner)/actions/artifacts/$ART/zip")
+  [ -n "$URL" ] || { echo "✗ GitHub gave no download link for artifact $ART"; exit 1; }
+  echo "→ server downloads artifact $ART from CI run $RUN"
+  # Files the current release already has become hard links: only what changed is stored.
+  printf 'url = "%s"\n' "$URL" | remote "t=\$(mktemp -d releases/.fetch.XXXXXX); trap 'rm -rf \$t' EXIT
+curl -fsSL -K - -o \$t/release.zip
+unzip -q \$t/release.zip -d \$t && mkdir \$t/x && tar -xzf \$t/vyona.tar.gz -C \$t/x --strip-components=1
+[ \"\$(cat \$t/x/REVISION)\" = $SHA ] || { echo '✗ the artifact is not $SHA'; exit 1; }
+[ -e current ] && link=--link-dest='$APP/current/' || link=
+rm -rf releases/$SHA.part && rsync -a --checksum \$link \$t/x/ releases/$SHA.part/
+rm -rf releases/$SHA && mv releases/$SHA.part releases/$SHA"
 fi
 
 if [ "$ROLLBACK" = 0 ]; then

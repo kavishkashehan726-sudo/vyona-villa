@@ -17,7 +17,7 @@ and proxies to the two local ports.
 | `watchdog.sh` | starts the apps at boot, and again whenever PM2 can't bring them back |
 | `env.example` | template for the server's `.env` (secrets live there, never in git) |
 | `../scripts/build-release.sh` | assembles the release (CI runs it on main) |
-| `../scripts/deploy-app.sh` | downloads CI's release, uploads it, migrates, switches, restarts, checks health |
+| `../scripts/deploy-app.sh` | has the server fetch CI's release, migrates, switches, restarts, checks health |
 
 On the server, everything lives in `~/app`:
 
@@ -135,7 +135,8 @@ chmod 600 .env
 
 ### 5. First deploy
 
-On your machine, `gh` must be signed in, because the release is downloaded from CI. Add
+On your machine, `gh` must be signed in: it finds CI's release and asks GitHub for a download
+link for the server. Add
 `DEPLOY_APP_DIR=/home/vyonaweligama/app` to `scripts/deploy.env`, then:
 
 ```bash
@@ -156,9 +157,11 @@ scripts/deploy-app.sh --restart       # restart the apps, e.g. after editing .en
 
 A deploy does these steps in order:
 
-1. Downloads the release into `.release/<sha>` (gitignored).
-2. Uploads it with rsync. Files the current release already has become hard links, so a deploy
-   that changes only code sends and stores only that code.
+1. Asks GitHub for a download link to CI's release. The link is signed and valid for about a
+   minute, so the server needs no GitHub token.
+2. The server downloads the release (about 105 MB, a few seconds) and unpacks it into
+   `releases/<sha>`. Files the current release already has become hard links, so a deploy that
+   changes only code stores only that code.
 3. Runs migrations, the seed and the photo import from the new release. All three are
    idempotent: the seed never overwrites what the owner edits in the admin.
 4. Switches `current`, then deletes and starts the PM2 apps (see below).
