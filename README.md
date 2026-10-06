@@ -6,8 +6,8 @@
 
 A Next.js public site with an interactive 3D villa and a live booking calendar, PayHere checkout
 with room holds that can't double-book, an owner's admin, and a job worker for emails and
-channel sync. Postgres, Prisma, Redis and BullMQ in a pnpm + Turborepo monorepo, all running in
-Docker.
+channel sync. Postgres, Prisma, Redis and BullMQ in a pnpm + Turborepo monorepo, developed in
+Docker and run under PM2 in production.
 
 </div>
 
@@ -22,7 +22,7 @@ Docker.
 | 1.4 | Booking flow: room holds, PayHere checkout, confirmation emails, hold expiry | Done |
 | 1.5 | Owner's admin: calendar, bookings, rates, photos, settings | Done |
 | 1.6 | Booking.com sync through Beds24 | Done (against a stand-in until the Beds24 account exists) |
-| 1.7 | Production images, deployment and backups | Next |
+| 1.7 | Production release, deployment and backups | Ready; first deploy waits on server setup |
 
 The full specification is in [docs/booking-engine-spec.md](docs/booking-engine-spec.md), and the
 3D and motion rules are in [docs/frontend-visual-guide.md](docs/frontend-visual-guide.md).
@@ -151,6 +151,23 @@ Core tests run against a separate `vyona_test` database that the test setup crea
 truncates, so development data is never touched. CI runs typecheck, tests and a full build
 against Postgres and Redis services.
 
+## Production
+
+The server runs the three apps under [PM2](https://pm2.keymetrics.io/), with Postgres and Redis
+installed alongside. CI checks every push. On `main` it also builds the release: the two Next
+apps as standalone servers, and the worker as a single bundle. The server never builds anything.
+[`scripts/deploy-app.sh`](scripts/deploy-app.sh) downloads the release, uploads only what
+changed, runs the migrations and restarts the apps. A nightly cron job backs up the database and
+photos.
+
+```bash
+scripts/deploy-app.sh               # newest green build: upload, migrate, restart, wait for health
+scripts/deploy-app.sh --tag <sha>   # one exact build; also how to roll back
+scripts/deploy-app.sh --backups     # copy the nightly backups off the server
+```
+
+The server setup, cut-over and restore steps are in [deploy/README.md](deploy/README.md).
+
 ## Project layout
 
 ```
@@ -163,6 +180,8 @@ packages/
   db/         Prisma schema, migrations, seed (the client's room brief), photo conversion
   ui/         design tokens (Tailwind 4 @theme), line icons, logo
 prototype/    Phase 0: the single-file HTML prototype
+docker/       the development image
+deploy/       PM2 config, backup script, server runbook
 brand/        logo and mark, redrawn as SVG
 docs/         specifications and screenshots
 ```

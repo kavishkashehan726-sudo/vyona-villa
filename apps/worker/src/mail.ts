@@ -10,7 +10,7 @@ const FROM = process.env.MAIL_FROM || 'VYONA Weligama <stay@vyonaweligama.com>';
 const ADMIN_URL = process.env.ADMIN_URL ?? 'http://localhost:3001';
 const OWNER = process.env.ADMIN_EMAIL?.trim();
 
-const transport = nodemailer.createTransport(process.env.SMTP_URL ?? 'smtp://localhost:1025');
+const transport = nodemailer.createTransport(process.env.SMTP_URL || 'smtp://localhost:1025');
 
 const esc = (s: unknown) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);

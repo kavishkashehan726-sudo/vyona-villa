@@ -38,3 +38,28 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+
+  # The production release, after the checks pass on main. scripts/deploy-app.sh downloads it
+  # and PM2 runs it on the server; nothing is built there.
+  release:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SITE_URL: https://vyonaweligama.com   # inlined by Next at build time
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: scripts/build-release.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vyona-release
+          path: .release/vyona.tar.gz
+          compression-level: 0   # already gzipped
+          retention-days: 30

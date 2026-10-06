@@ -13,7 +13,8 @@
     "MEDIA_DIR",
     "PAYHERE_*",
     "BEDS24_*",
-    "ADMIN_*"
+    "ADMIN_*",
+    "SITE_INDEXABLE"
   ],
   "tasks": {
     "generate": {

@@ -9,7 +9,7 @@ import { RoomDialog } from '@/components/RoomDialog';
 import { Runtime } from '@/components/Runtime';
 import type { BootData } from '@/client/boot';
 import { clientPhotos, getPhotos } from '@/lib/media';
-import { getRooms, getSettings, jsonScript, lodgingJsonLd, lowestRate, SITE_URL } from '@/lib/site';
+import { getRooms, getSettings, indexable, jsonScript, lodgingJsonLd, lowestRate, SITE_URL } from '@/lib/site';
 import { cormorant, jost, script } from './fonts';
 import './globals.css';
 import './site.css';
@@ -23,8 +23,9 @@ export const metadata: Metadata = {
   description:
     'A seven-room boutique villa among the palms, just beyond the bustle of Weligama, Sri Lanka. Pool, gardens and breakfast made here.',
   openGraph: { type: 'website', siteName: 'VYONA Weligama', locale: 'en_GB' },
-  // Kept out of search engines until the client confirms real prices.
-  robots: process.env.NEXT_PUBLIC_INDEXABLE === '1' ? undefined : { index: false, follow: false },
+  // Kept out of search engines until the client confirms real prices. Read at run time (not a
+  // NEXT_PUBLIC_ variable, which the build would bake in), so going live needs no new image.
+  robots: indexable() ? undefined : { index: false, follow: false },
 };
 
 export const viewport: Viewport = { themeColor: '#f1ece3' };

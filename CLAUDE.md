@@ -13,7 +13,9 @@ The full system is specified in [docs/booking-engine-spec.md](docs/booking-engin
   domain until the cut-over. It is frozen; it is the visual reference for the port, not edited.
 - **Phase 1 (current):** the real system in a pnpm + Turborepo monorepo. Build order:
   1 scaffold ✓ · 2 core ✓ · 3 public site ✓ · 4 booking +
-  PayHere ✓ · 5 admin ✓ · 6 Beds24 ✓ · 7 production. Client feedback lives in `client updates/`
+  PayHere ✓ · 5 admin ✓ · 6 Beds24 ✓ · 7 production (PM2 release, deploy script, backups
+  ready; the first deploy waits on the server setup in `deploy/README.md`). Client feedback
+  lives in `client updates/`
   (gitignored) and is summarised under *Content decisions*.
 
 ## Hard rules
@@ -73,11 +75,14 @@ packages/
                     channel (pushAri, pushBooking, importBooking, pullBooking, pollBookings)
   ui/               tokens.css (Tailwind 4 @theme), icons.tsx, logo.tsx (swap point for the
                     official logo)
-docker/             dev.Dockerfile
-.github/workflows/  ci.yml: typecheck, test, build against postgres + redis services
+docker/             dev.Dockerfile (development only; production runs under PM2)
+deploy/             ecosystem.config.cjs (PM2), backup.sh, env.example, README (server runbook)
+.github/workflows/  ci.yml: typecheck, test, build against postgres + redis services; on main,
+                    the `vyona-release` artifact
 brand/              vyona-logo.svg, vyona-mark.svg (redrawn from the template nav logo)
 docs/               specs + screenshots for the README
-scripts/            deploy.sh + deploy.env.example (deploy.env is gitignored)
+scripts/            deploy.sh (prototype), build-release.sh + deploy-app.sh (Phase 1),
+                    deploy.env.example (deploy.env is gitignored)
 images/             59 client photos (ignored)
 template/           the design reference JPEG (ignored)
 prototype/
@@ -135,6 +140,27 @@ holds host, user and path and is **gitignored** because the repo is public.
 - The prototype is `noindex` in the markup and disallowed in `robots.txt` while prices are
   placeholders.
 
+**Phase 1** (runbook: [deploy/README.md](deploy/README.md)) runs under **PM2** as the site user,
+with Postgres 17 and Redis installed on the server. CI's `release` job (main only) runs
+`pnpm build` and `scripts/build-release.sh`, and keeps `vyona-release` (a tarball) for 30 days.
+`scripts/deploy-app.sh` finds the newest green run with `gh` and downloads the release to
+`.release/<sha>`. It rsyncs that to `releases/<sha>` with `--link-dest` against `current`, then
+runs migrate, seed and photo import, switches `current`, deletes and starts the PM2 apps, and waits
+for both `/api/health`. The newest three releases are kept. `--tag <sha>` deploys one build
+(rolling back to a release still on the server skips migrations). `--images` uploads the
+photos, `--backups` pulls `backups/` down, `--status` shows PM2 and health, and `--restart`
+restarts the apps (after an `.env` edit). The server's
+`.env` (from `deploy/env.example`) is written by hand and never leaves the server.
+
+- Needs from the owner of the server: Postgres 17 and Redis (noeviction, appendonly) installed
+  by root, Node 24 (nvm) and PM2 for the site user, the crontab (`@reboot pm2 resurrect`,
+  nightly backup), the two CloudPanel reverse-proxy sites and `client_max_body_size 16m` on
+  the admin vhost.
+- Indexing is `SITE_INDEXABLE=1` in the server's `.env`, read at run time by the layout's
+  `robots` and `app/robots.ts`; `deploy-app.sh --restart`, no rebuild.
+- Backups: `backup.sh` from the site user's crontab at 21:00 UTC (02:30 Colombo):
+  `pg_dump -Fc` kept 14 days, a photo tarball kept 3, files mode 600.
+
 ## Design tokens
 
 Taken from `template/`:
@@ -155,8 +181,24 @@ elements, pointed-oval seed logo.
 
 ## Phase 1 decisions
 
-- Hosting: same VPS, Docker. Images are built in CI (GHCR), never on the VPS (RAM and disk are
-  tight). CloudPanel reverse-proxies the apex → :3000 and the admin subdomain → :3001.
+- Hosting: same VPS, **PM2, not Docker** (switched in step 7). Docker would have put the site
+  user in the root-equivalent `docker` group and cost about 1.5 GB of images on a disk that is
+  85% full. The release is built in CI, never on the VPS (RAM is tight). CloudPanel
+  reverse-proxies the apex → :3000 and the admin subdomain → :3001. Development stays in Docker.
+- The release (`scripts/build-release.sh`, on glibc like the server):
+  - web and admin are Next standalone output (`node apps/<app>/server.js`);
+  - the worker, the seed and the photo import are esbuild bundles. Prisma 7's query compiler is
+    inlined as base64 WASM, so they need no node_modules;
+  - `db/node_modules` holds only the Prisma CLI (for `migrate deploy`) and sharp: 271 MB,
+    mostly Studio's dependencies, which `--link-dest` stores once across releases;
+  - `NEXT_PUBLIC_SITE_URL` is set in the CI job, because Next inlines it.
+- PM2 (`deploy/ecosystem.config.cjs`, in the app folder): secrets reach Node through
+  `--env-file=.env`, so they stay out of PM2's dump. The fixed settings in the ecosystem win,
+  because `--env-file` never overrides a set variable. Apps listen on 127.0.0.1. Script paths go
+  through `current`, so crash restarts and `pm2 resurrect` never run a pruned release.
+- Memory: web and admin heap 256 MB, restarted above 384; worker 192/256. Postgres
+  `shared_buffers` 64 MB and 40 connections; Redis maxmemory 64 MB with noeviction (BullMQ).
+  pm2-logrotate keeps 3 × 10 MB.
 - The API lives in Next route handlers in `apps/web`, not a separate service (one fewer container).
 - Payments: **PayHere** (sandbox until the merchant account exists).
 - Booking.com: **through Beds24** API v2, behind an adapter that is mocked until the client has an
@@ -281,6 +323,12 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
 
 ## Gotchas
 
+- **Never `pm2 reload` or `pm2 restart` the apps** (PM2 7, fork mode). When the old process's
+  exit event lands after the new start has begun, PM2 takes it for a crash and starts a second
+  copy it no longer tracks: it holds the port and the tracked app loops on `EADDRINUSE` until
+  `errored`. Seen in 3 of 37 test reloads, each soon after the apps had started.
+  `deploy-app.sh` deletes and starts (a late exit for a deleted app is ignored); `--restart`
+  does the same by hand.
 - **Lock and read in separate statements.** Under READ COMMITTED a `SELECT … FOR UPDATE` that
   waited for a lock re-reads the locked row but joins against its old snapshot, so it misses the
   winner's new reservation. `holdRoom` locks with one statement and reads with the next. The

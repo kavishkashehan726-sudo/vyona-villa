@@ -7,6 +7,9 @@ export { lowestRate, roomSpecs, roomTitle, type RoomData } from './rooms';
 
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
+/** Search engines may index the site: SITE_INDEXABLE=1, set once the client confirms real prices. */
+export const indexable = () => process.env.SITE_INDEXABLE === '1';
+
 // PLACEHOLDERS until the client sends the real details (see CLAUDE.md).
 export const CONTACT = {
   street: 'Placeholder Road',

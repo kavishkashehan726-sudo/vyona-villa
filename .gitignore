@@ -32,3 +32,8 @@ next-env.d.ts
 packages/db/src/generated/
 .media/
 .pnpm-store/
+
+# production server files that may hold secrets or client data
+deploy/.env
+backups/
+.release/

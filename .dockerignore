@@ -1,0 +1,25 @@
+# The dev image needs no source (it is bind-mounted), so keep the build context small.
+**/node_modules
+**/.next
+**/.turbo
+.pnpm-store
+**/*.tsbuildinfo
+**/next-env.d.ts
+packages/db/src/generated
+.git
+.github
+.env
+.env.*
+!.env.example
+images
+template
+client updates
+.dist
+.media
+.playwright-mcp
+prototype
+docs
+backups
+scripts/deploy.env
+deploy/.env
+.release

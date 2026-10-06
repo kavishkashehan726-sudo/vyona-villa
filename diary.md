@@ -5,6 +5,91 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-06 — Phase 1 step 7: production under PM2
+
+### Done
+
+- Built the Docker version first: three images for GHCR and a compose stack with Postgres, Redis
+  and a backup container. Then switched to **PM2**, at the owner's request. Docker would have
+  put the site user in the root-equivalent `docker` group and needed about 1.5 GB of images on
+  a disk that is 85% full. CloudPanel runs Node sites with PM2 anyway. Development stays in
+  Docker.
+- `scripts/build-release.sh` assembles the release after `pnpm build`:
+  - web and admin as Next standalone;
+  - the worker, the seed and the photo import as esbuild bundles;
+  - `db/` with the migrations and a node_modules holding only the Prisma CLI and sharp.
+  It refuses to pack `.env` files or photos, because the artifact is public.
+- CI `release` job (main only): build, assemble, upload `vyona-release` for 30 days.
+- `deploy/ecosystem.config.cjs` defines three PM2 apps on 127.0.0.1:
+  - script paths go through `current`;
+  - secrets come in through Node's `--env-file`;
+  - heap caps plus `max_memory_restart`, and exponential back-off for a crash loop;
+  - a 15 s kill timeout so the worker can close its queues.
+- `scripts/deploy-app.sh`: picks the newest green run with `gh`, downloads the release, rsyncs it
+  with `--link-dest` against `current`, then migrate → seed → photo import, switch, delete
+  and start the PM2 apps, health, keep three releases. `--tag` rolls back without migrating when that
+  release is still on the server.
+- `deploy/backup.sh` runs from the site user's crontab. The password goes to `pg_dump` through
+  `PG*` variables, not the command line. The files are mode 600.
+- `deploy/README.md` covers:
+  - the root steps (Postgres 17 from PGDG, Redis settings);
+  - nvm, PM2 and pm2-logrotate;
+  - the crontab (`@reboot pm2 resurrect`, the backup);
+  - CloudPanel, `.env`, deploys, rollback, logs, backups and the cut-over.
+- Indexing is now `SITE_INDEXABLE`, read at run time. It was `NEXT_PUBLIC_INDEXABLE`, which
+  Next would bake into the build. The new `app/robots.ts` follows the same switch.
+- `mail.ts` treats an empty `SMTP_URL` like a missing one.
+
+### Problems hit
+
+- `pnpm fetch` fills node_modules with the whole lockfile, which made the Docker worker image
+  1.47 GB. That was the first sign the Docker images were heavy for this server.
+- The Prisma CLI needs 271 MB, mostly Studio's dependencies, only for `migrate deploy`.
+  Hard links through `--link-dest` mean it is stored and uploaded only when its version changes.
+- **`pm2 reload` can start an app twice.** In fork mode a reload is a stop then a start. When the
+  old process's exit event arrives after the start has begun, PM2 takes it for a crash and starts
+  another copy, which it then loses track of. That copy holds the port, and the tracked app loops
+  on `EADDRINUSE` until PM2 marks it `errored` (admin: 17 restarts). It happened in 3 of 37 test
+  reloads, and dropping `exp_backoff_restart_delay` didn't stop it. PM2's source confirms the
+  race. Deploys now `pm2 delete` and then `pm2 start`, because the exit event of a deleted app is
+  ignored. `--restart` does the same after an `.env` edit.
+- The ecosystem's script paths go through `current/…`, so a crash restart or `pm2 resurrect`
+  never runs a release that has been pruned.
+- Non-interactive ssh skips the nvm lines in `.bashrc`, so `deploy-app.sh` sources `nvm.sh` itself.
+- A rejected local test of the Docker stack had partly run: its Postgres and Redis containers
+  were still up, restarting on boot. Removed them, their volumes and the `ghcr.io/local` tags.
+
+### Checked
+
+- `pnpm typecheck` clean; `bash -n` on both scripts, `sh -n` on `backup.sh`.
+- Built the release the way CI does, in Debian Node 24 (glibc): 396 MB, a 107 MB tarball.
+- Ran it under PM2 7 as an unprivileged user against Postgres 17 and Redis 7:
+  - migrate, seed and photo import, run twice to show they're idempotent;
+  - web and admin `/api/health` 200;
+  - `/`, `/stay`, `/stay/jala`, `/explore`, `/book`, `/api/calendar`, admin `/login`, a static
+    chunk and an imported photo all 200;
+  - `robots.txt` is `Disallow: /` and the page carries `noindex` while `SITE_INDEXABLE=0`;
+  - both ports listen on 127.0.0.1 only;
+  - the admin password is not in `dump.pm2`;
+  - memory after start: web and admin about 110–140 MB each, worker about 130 MB.
+- Three deploys in a row with delete and start: each healthy in 2 s, three processes, the worker
+  started once per deploy, no errors.
+- Postgres and Redis unreachable: all three apps stay online with no restarts, and health
+  answers 503.
+- `backup.sh` with Postgres 17's `pg_dump`: reads a quoted `DATABASE_URL`, writes mode-600
+  files, the dump lists all 11 tables, and a second run the same day replaces the first.
+- Not run against the real VPS: it waits on the root steps in `deploy/README.md`.
+
+### Next
+
+- On the server: the root steps (Postgres 17, Redis), Node 24 and PM2 for the site user, the
+  crontab, the CloudPanel sites and `.env`. Then push, wait for CI and run
+  `scripts/deploy-app.sh --images`.
+- The worker logs Node's `url.parse()` deprecation warning (DEP0169) from a dependency.
+  It's harmless, but worth tracing when convenient.
+
+---
+
 ## 2026-10-05 — Step 6 follow-up: walking `/channel` in the browser
 
 ### Done

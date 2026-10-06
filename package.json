@@ -20,6 +20,7 @@
     "media:import": "pnpm --filter @vyona/db run media:import"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "turbo": "^2.11.7",
     "typescript": "^5.9.3"
   }
