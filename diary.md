@@ -5,6 +5,33 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-06 — Cut-over: the real site replaces the prototype
+
+### Done
+
+- Deployed `8006d02` (3D villa off, themed scrollbars, cursor over dialogs) to production.
+- The owner edited the apex's CloudPanel vhost to proxy to :3020 (the text is in
+  `deploy/README.md`). It stays a static site with an edited vhost: deleting a CloudPanel site
+  deletes its user's home, which is `~/app`.
+- Deleted the prototype from `htdocs` (`index.html`, `assets/`, `robots.txt`); `.well-known`
+  stays for certificate renewals. `scripts/deploy.sh` is retired.
+- The preview notice said card payments go to a test gateway, which is only true in
+  development. It now follows `payhereConfig()`: no gateway → "Online payment isn't switched
+  on yet", sandbox or mock → the test-gateway line, live → nothing.
+
+### Checked
+
+- Through Cloudflare: `/`, `/stay`, `/book`, `/api/health` and `/robots.txt` (Next's, still
+  `Disallow: /`) answer 200; www and http 301 to `https://vyonaweligama.com`.
+- Playwright on the live home page: no console errors, no failed requests, no 3D section.
+
+### Next
+
+- `SITE_INDEXABLE=1` once real prices are confirmed; the PayHere notify URL and the Beds24
+  webhook once those accounts exist.
+
+---
+
 ## 2026-10-06 — Client fixes: 3D villa off, scrollbars, cursor over dialogs
 
 ### Done

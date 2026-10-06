@@ -17,7 +17,7 @@ Docker and run under PM2 in production.
 
 | Phase | What | State |
 |---|---|---|
-| 0 | Single-file HTML prototype for the client to review ([`prototype/`](prototype/)) | Done, approved, live at [vyonaweligama.com](https://vyonaweligama.com) |
+| 0 | Single-file HTML prototype for the client to review ([`prototype/`](prototype/)) | Done and approved; replaced by the real site on 2026-10-06 |
 | 1.1–1.3 | Monorepo, pricing and availability core, public site ported from the prototype | Done |
 | 1.4 | Booking flow: room holds, PayHere checkout, confirmation emails, hold expiry | Done |
 | 1.5 | Owner's admin: calendar, bookings, rates, photos, settings | Done |
@@ -202,8 +202,8 @@ Before the real system, the owner needed to review the design from a phone with 
 connectivity. So [`prototype/`](prototype/) builds into a single HTML file: every photo is a
 WebP data URI, every font is inlined, and Three.js, GSAP and Motion are bundled in. It runs
 offline from an email attachment, booking flow (mocked) and 3D scene included. A second build
-writes the photos as files for the live site instead, cutting the page from 2.8 MB to 356 KB
-compressed.
+writes the photos as files for the web instead, cutting the page from 2.8 MB to 356 KB
+compressed. It was live at the domain until the real site replaced it.
 
 ```bash
 docker compose run --rm prototype npm run build      # → .dist/vyona-prototype.html

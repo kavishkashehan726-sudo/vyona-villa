@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { PAYHERE_LIVE_URL, payhereConfig } from '@vyona/core';
 import { Icon } from '@vyona/ui';
 import { BookBar } from '@/components/BookBar';
 import { Footer } from '@/components/Footer';
@@ -45,6 +46,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     })),
     settings,
   };
+  // What the preview notice says about card payment, by the gateway this server would use.
+  const payhere = payhereConfig();
+  const payNote = !payhere
+    ? ' Online payment isn’t switched on yet.'
+    : payhere.checkoutUrl === PAYHERE_LIVE_URL
+      ? ''
+      : ' Card payments go to a test gateway; nothing is charged.';
 
   return (
     // The inline script adds `js` before first paint, so reveals start hidden.
@@ -89,7 +97,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           <p>
             <strong>Preview</strong>{' '}
             <span className="proto-badge__long">
-              Prices and contact details are placeholders. Card payments go to a test gateway; nothing is charged.
+              Prices and contact details are placeholders.{payNote}
             </span>
             <span className="proto-badge__short">Details are placeholders.</span>
           </p>

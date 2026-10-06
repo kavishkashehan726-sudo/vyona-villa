@@ -110,8 +110,10 @@ Colombo time (`date` shows `+0530`); on a UTC server, write `0 21` instead.
 
 ### 3. In CloudPanel
 
-1. Change **vyonaweligama.com** from a static site to a *Reverse Proxy* site pointing at
-   `http://127.0.0.1:3020` (`WEB_PORT`), at the cut-over (see the last section).
+1. Point **vyonaweligama.com** at `http://127.0.0.1:3020` (`WEB_PORT`), at the cut-over (see
+   the last section). On the VPS it was a static site, so its vhost was edited rather than the
+   site replaced: **deleting a CloudPanel site deletes its user and home folder**, and that
+   folder is `~/app`.
 2. Add a *Reverse Proxy* site **admin.vyonaweligama.com** → `http://127.0.0.1:3021`
    (`ADMIN_PORT`).
 3. Issue a Let's Encrypt certificate for each. The admin needs a proxied (orange) `admin` DNS
@@ -229,14 +231,41 @@ past its limit, and the heap cap keeps Node's own garbage collector inside it.
 
 ## Cut-over from the prototype
 
-The static prototype stays live at the apex until the client signs off the new site.
-To switch over:
+Done on 2026-10-06. The steps, for a server set up from scratch:
 
 1. Deploy, and check the site on its port through an SSH tunnel:
    `ssh -L 3020:127.0.0.1:3020 …`, then http://localhost:3020.
-2. Turn the CloudPanel site into the reverse proxy (step 3 above).
-3. Purge the Cloudflare cache, because the prototype's photos are cached at the edge.
-4. Once real prices are confirmed, set `SITE_INDEXABLE=1` in `.env` and run
+2. In CloudPanel, open the static site's **Vhost** and, in the main `server` block, replace
+   `index index.html`, the static-file `location ~* ^.+\.(css|js|…)$` block and the
+   `if (-f $request_filename)` fallback with:
+
+   ```nginx
+   location / {
+     proxy_pass http://127.0.0.1:3020;
+     proxy_http_version 1.1;
+     proxy_set_header Host $host;
+     proxy_set_header X-Real-IP $remote_addr;
+     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+     proxy_set_header X-Forwarded-Proto $scheme;
+     proxy_set_header X-Forwarded-Host $host;
+     proxy_set_header Upgrade $http_upgrade;
+     proxy_set_header Connection "upgrade";
+     proxy_read_timeout 60;
+     proxy_buffer_size 128k;
+     proxy_buffers 4 256k;
+     proxy_busy_buffers_size 256k;
+   }
+   ```
+
+   Keep `{{root}}` and the `.well-known` location, which Let's Encrypt renewals use. The
+   static-file block has to go: it would answer `/_next/static/…` and `/media/…` from
+   `htdocs` with a 404.
+3. Delete the prototype from `htdocs` (`index.html`, `assets/`, `robots.txt`), keeping
+   `.well-known`.
+
+Still to do:
+
+1. Once real prices are confirmed, set `SITE_INDEXABLE=1` in `.env` and run
    `scripts/deploy-app.sh --restart`. `robots.txt` and the `noindex` tag both follow
    the setting, with no rebuild needed.
-5. Set the PayHere notify URL and the Beds24 webhook to the live domain.
+2. Set the PayHere notify URL and the Beds24 webhook to the live domain.

@@ -9,13 +9,13 @@ The full system is specified in [docs/booking-engine-spec.md](docs/booking-engin
 (Next.js, Postgres/Prisma, Redis/BullMQ, Booking.com ARI + webhooks) and
 [docs/frontend-visual-guide.md](docs/frontend-visual-guide.md) (3D and motion rules).
 
-- **Phase 0 (done, client approved):** `prototype/`, a single-file HTML page, still live at the
-  domain until the cut-over. It is the visual reference for the port, edited only for client
-  fixes that must reach the live site before the cut-over (and then in `apps/web` too).
+- **Phase 0 (done, client approved, retired):** `prototype/`, a single-file HTML page. It was
+  live at the domain until the cut-over on 2026-10-06 and is no longer served; the source stays
+  as the visual reference for the port.
 - **Phase 1 (current):** the real system in a pnpm + Turborepo monorepo. Build order:
   1 scaffold ✓ · 2 core ✓ · 3 public site ✓ · 4 booking +
-  PayHere ✓ · 5 admin ✓ · 6 Beds24 ✓ · 7 production (PM2 release, deploy script, backups
-  ready; the first deploy waits on the server setup in `deploy/README.md`). Client feedback
+  PayHere ✓ · 5 admin ✓ · 6 Beds24 ✓ · 7 production ✓ (PM2, live at the apex and the admin
+  subdomain since 2026-10-06; still noindex, PayHere and Beds24 not connected). Client feedback
   lives in `client updates/`
   (gitignored) and is summarised under *Content decisions*.
 
@@ -83,7 +83,7 @@ deploy/             ecosystem.config.cjs (PM2), backup.sh, watchdog.sh, env.exam
                     the `vyona-release` artifact
 brand/              vyona-logo.svg, vyona-mark.svg (redrawn from the template nav logo)
 docs/               specs + screenshots for the README
-scripts/            deploy.sh (prototype), build-release.sh + deploy-app.sh (Phase 1),
+scripts/            deploy.sh (prototype, retired), build-release.sh + deploy-app.sh (Phase 1),
                     deploy.env.example (deploy.env is gitignored)
 images/             59 client photos (ignored)
 template/           the design reference JPEG (ignored)
@@ -115,7 +115,7 @@ Prototype (profile `prototype`):
 docker compose run --rm prototype npm run build      # → .dist/vyona-prototype.html  (one file)
 docker compose run --rm prototype npm run build:web  # → .dist/web/  (document + assets/)
 docker compose up prototype                          # watch + serve on :5173
-./scripts/deploy.sh --build                          # build:web + rsync to the VPS
+./scripts/deploy.sh --build                          # retired: the apex now proxies to the app
 ```
 
 **Two builds from one source.** `build` inlines every photo as base64: ~4 MB, fully offline, for
@@ -128,19 +128,26 @@ when online.
 
 ## Deployment
 
-Live at **https://vyonaweligama.com** — CloudPanel static site on the OVH Canada VPS (address in `scripts/deploy.env`),
-behind Cloudflare. `scripts/deploy.sh` rsyncs `.dist/web/` to the site root; `scripts/deploy.env`
-holds host, user and path and is **gitignored** because the repo is public.
+Live at **https://vyonaweligama.com** (the Next site, `vyona-web` on :3020) and
+**https://admin.vyonaweligama.com** (:3021), on the OVH Canada VPS (address in
+`scripts/deploy.env`), behind Cloudflare. `scripts/deploy.env` holds host, user and paths and is
+**gitignored** because the repo is public.
 
-- SSH as the site user `vyonaweligama` with `~/.ssh/vyona_deploy`. Never root: the key can only
-  write into one htdocs folder.
+- **Cut-over (2026-10-06):** the apex is still CloudPanel's *static* site, with its vhost edited
+  to `proxy_pass http://127.0.0.1:3020` (the static-file `location` and the `-f` fallback
+  removed, `.well-known` kept for Let's Encrypt). `htdocs/` holds only `.well-known`.
+  **Never delete that site in CloudPanel**: deleting a site deletes its user and home folder,
+  which is `~/app` (releases, `.env`, photos, backups).
+
+- SSH as the site user `vyonaweligama` with `~/.ssh/vyona_deploy`. Never root. The site user
+  can't read the nginx vhosts; the owner edits them in CloudPanel.
 - Cloudflare SSL mode is **Full**, and the SSL mode is per-zone, not per-account. Full (strict)
   is only safe once CloudPanel holds a real Let's Encrypt cert — with the self-signed default it
   returns error 526 to every visitor. Flexible is never right: CloudPanel's own HTTPS redirect
   turns it into a redirect loop.
 - `www` 301s to the apex. Both records are proxied (orange cloud).
-- The prototype is `noindex` in the markup and disallowed in `robots.txt` while prices are
-  placeholders.
+- The site is `noindex` and `robots.txt` disallows everything until `SITE_INDEXABLE=1`
+  (prices are still placeholders).
 
 **Phase 1** (runbook: [deploy/README.md](deploy/README.md)) runs under **PM2** as the site user,
 with Postgres 17 and Redis installed on the server. CI's `release` job (main only) runs
@@ -320,7 +327,7 @@ elements, pointed-oval seed logo.
 - About and the Explore pillar pages carry draft or placeholder copy, marked on the page.
 - Contact details, address and social handles are placeholders, marked on the page.
 
-## Frontend guide checklist (live in the prototype and in `apps/web`)
+## Frontend guide checklist (in the prototype and in `apps/web`)
 
 Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/client/`.
 
