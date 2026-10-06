@@ -152,6 +152,13 @@ photos, `--backups` pulls `backups/` down, `--status` shows PM2 and health, and 
 restarts the apps (after an `.env` edit). The server's
 `.env` (from `deploy/env.example`) is written by hand and never leaves the server.
 
+- **The VPS is shared** with about twenty other CloudPanel sites (Debian 13, OpenSSL 3.5,
+  7.7 GB RAM). Ports 3000–3012 are taken, so VYONA uses `WEB_PORT=3020` and `ADMIN_PORT=3021`.
+  Debian's Postgres 17 and Redis were already installed. Redis is shared and already
+  `noeviction`, with no AOF; another app's BullMQ lives in database 0, so VYONA uses
+  `redis://…/5`. Don't change the shared Postgres or Redis settings. The site user's
+  Node 24 and PM2 7 come from its own nvm; the system's Node 22 and PM2 6 belong to the other
+  sites.
 - Needs from the owner of the server: Postgres 17 and Redis (noeviction, appendonly) installed
   by root, Node 24 (nvm) and PM2 for the site user, the crontab (`@reboot pm2 resurrect`,
   nightly backup), the two CloudPanel reverse-proxy sites and `client_max_body_size 16m` on
@@ -184,7 +191,7 @@ elements, pointed-oval seed logo.
 - Hosting: same VPS, **PM2, not Docker** (switched in step 7). Docker would have put the site
   user in the root-equivalent `docker` group and cost about 1.5 GB of images on a disk that is
   85% full. The release is built in CI, never on the VPS (RAM is tight). CloudPanel
-  reverse-proxies the apex → :3000 and the admin subdomain → :3001. Development stays in Docker.
+  reverse-proxies the apex → :3020 and the admin subdomain → :3021. Development stays in Docker.
 - The release (`scripts/build-release.sh`, on glibc like the server):
   - web and admin are Next standalone output (`node apps/<app>/server.js`);
   - the worker, the seed and the photo import are esbuild bundles. Prisma 7's query compiler is

@@ -2,8 +2,8 @@
 
 The Phase 1 system runs on the VPS under **PM2**, as the site user `vyonaweligama`:
 
-- the public site (`vyona-web`, :3000);
-- the admin (`vyona-admin`, :3001);
+- the public site (`vyona-web`, :3020);
+- the admin (`vyona-admin`, :3021);
 - the worker (`vyona-worker`).
 
 Postgres and Redis run on the server itself. CI builds the release; the server only unpacks it,
@@ -37,7 +37,18 @@ backups/              nightly dumps
 The server needs Postgres and Redis. Check `openssl version` first: it must report 3.x
 (Debian 12 or Ubuntu 22.04 and later), because the release's Prisma engine is built for it.
 
-**Postgres 17**, the version used in development and CI:
+**Postgres 17**, the version used in development and CI. If it's already installed (the VPS has
+Debian's `postgresql-17`), skip to creating the role. The password is read from the app's `.env`,
+written first (step 4), so it's never typed or shown:
+
+```bash
+sudo -u postgres psql -v pw="$(sed -n 's|^DATABASE_URL=postgresql://vyona:\([^@]*\)@.*|\1|p' /home/vyonaweligama/app/.env)" <<'SQL'
+CREATE ROLE vyona LOGIN PASSWORD :'pw';
+CREATE DATABASE vyona OWNER vyona;
+SQL
+```
+
+On a fresh server:
 
 ```bash
 apt install -y postgresql-common
@@ -54,7 +65,8 @@ SQL
 systemctl restart postgresql
 ```
 
-It listens on localhost only by default; keep it that way.
+It listens on localhost only by default; keep it that way. On a Postgres that other sites share,
+leave the `ALTER SYSTEM` settings out.
 
 **Redis.** Run `apt install -y redis-server`, then set these in `/etc/redis/redis.conf`:
 
@@ -66,8 +78,10 @@ appendonly yes
 ```
 
 Then run `systemctl restart redis-server`. BullMQ needs `noeviction`, because a dropped key
-would be a lost job. If another site already uses this Redis with a different policy, give
-VYONA its own instance on another port and change `REDIS_URL`.
+would be a lost job. On a Redis that other sites share, check the policy
+(`redis-cli config get maxmemory-policy`) and give VYONA its own database number in
+`REDIS_URL` (the VPS uses `/5`). If the policy isn't `noeviction`, VYONA needs its own
+instance on another port.
 
 ### 2. As the site user: Node 24 and PM2
 
@@ -94,8 +108,9 @@ needed). The second runs the backup at 02:30 Colombo time, assuming the server c
 ### 3. In CloudPanel
 
 1. Change **vyonaweligama.com** from a static site to a *Reverse Proxy* site pointing at
-   `http://127.0.0.1:3000`, at the cut-over (see the last section).
-2. Add a *Reverse Proxy* site **admin.vyonaweligama.com** → `http://127.0.0.1:3001`.
+   `http://127.0.0.1:3020` (`WEB_PORT`), at the cut-over (see the last section).
+2. Add a *Reverse Proxy* site **admin.vyonaweligama.com** → `http://127.0.0.1:3021`
+   (`ADMIN_PORT`).
 3. Issue a Let's Encrypt certificate for each. The admin needs a proxied (orange) `admin` DNS
    record in Cloudflare first.
 4. In the admin site's vhost, raise the upload limit so phone photos get through:
@@ -196,7 +211,7 @@ The static prototype stays live at the apex until the client signs off the new s
 To switch over:
 
 1. Deploy, and check the site on its port through an SSH tunnel:
-   `ssh -L 3000:127.0.0.1:3000 …`.
+   `ssh -L 3020:127.0.0.1:3020 …`, then http://localhost:3020.
 2. Turn the CloudPanel site into the reverse proxy (step 3 above).
 3. Purge the Cloudflare cache, because the prototype's photos are cached at the edge.
 4. Once real prices are confirmed, set `SITE_INDEXABLE=1` in `.env` and run
