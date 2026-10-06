@@ -406,6 +406,8 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
 - Scrollbars are themed once, globally: `scrollbar-color` on `html` (inherited) and
   `scrollbar-width: thin` on `*`, with a `::-webkit-scrollbar` fallback for Safari only
   (`@supports not (scrollbar-color: auto)`). Same in the prototype, web and admin CSS.
+- Tailwind's preflight sets `margin: 0` on everything, which strips the `margin: auto` that
+  centres a modal `<dialog>`; `site.css` puts it back on `dialog`.
 - three r186 removed `PCFSoftShadowMap` (it falls back with a warning); use `PCFShadowMap`.
 
 - `aspect-ratio` does nothing on an inline element — the room card image wrapper is a `<span>` and
@@ -423,6 +425,12 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
   when photos are inlined and 356 KB when they are files.
 - Cloudflare does not cache HTML by default (`cf-cache-status: DYNAMIC`) but does cache `.webp`.
   That is most of why the split build helps — photos come from the Singapore edge, not Canada.
+
+## Remind the owner
+
+- **Search engines (asked 2026-10-06):** the live site is still `noindex` with `Disallow: /`.
+  Bring it up at the start of each session until it's done: once the client confirms real
+  prices, set `SITE_INDEXABLE=1` in the server's `.env` and run `scripts/deploy-app.sh --restart`.
 
 ## Waiting on the client
 

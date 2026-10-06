@@ -5,6 +5,22 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-06 — Room dialog centred
+
+### Done
+
+- The room dialog opened in the top-left corner on the live site: Tailwind's preflight resets
+  `margin` to 0, and `margin: auto` is what centres a modal dialog. `site.css` restores it on
+  `dialog`. The prototype had no Tailwind, so it never showed there.
+- CLAUDE.md has a *Remind the owner* section: switching on search indexing.
+
+### Checked
+
+- Playwright on dev: the dialog sits centred at 1912, 1440 and 390 px; the lightbox is still
+  full screen.
+
+---
+
 ## 2026-10-06 — Cut-over: the real site replaces the prototype
 
 ### Done

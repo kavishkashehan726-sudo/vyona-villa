@@ -683,7 +683,8 @@ hr { border: 0; margin: 0; }
 @keyframes pop { from { opacity: 0; transform: translate3d(0, 24px, 0) scale(0.98); } }
 @keyframes sheet { from { transform: translate3d(0, 100%, 0); } }
 
-dialog { border: 0; padding: 0; color: var(--ink); }
+/* margin: auto is what centres a modal dialog; Tailwind's preflight resets it to 0. */
+dialog { margin: auto; border: 0; padding: 0; color: var(--ink); }
 dialog::backdrop { background: rgb(28 28 20 / 0.6); backdrop-filter: blur(4px); }
 .room-dialog {
   width: min(1100px, calc(100% - 2rem)); max-height: calc(100svh - 2rem); border-radius: 20px; background: var(--linen); overflow: hidden;
