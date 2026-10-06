@@ -13,6 +13,19 @@ export function initCursor() {
   if (!c || !dot || !ring || !label) return;
   document.documentElement.classList.add('has-cursor');
 
+  // Modal dialogs (room details, the lightbox) sit in the top layer, above any z-index, so the
+  // cursor would vanish under them. As a manual popover it is in the top layer too, and showing
+  // it again after a dialog opens puts it back on top.
+  if (typeof c.showPopover === 'function') {
+    c.popover = 'manual';
+    c.showPopover();
+    new MutationObserver(() => {
+      if (!document.querySelector('dialog:modal')) return;
+      c.hidePopover();
+      c.showPopover();
+    }).observe(document.body, { subtree: true, attributeFilter: ['open'] });
+  }
+
   let mx = -100;
   let my = -100;
   let rx = mx;

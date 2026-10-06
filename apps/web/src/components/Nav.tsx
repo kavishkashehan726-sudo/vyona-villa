@@ -9,6 +9,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Mark } from '@vyona/ui';
 import { lockScroll } from '@/client/ui';
+import { SHOW_VILLA_3D } from '@/lib/villa';
 
 const LEFT = [
   ['/stay', 'Stay'],
@@ -19,7 +20,7 @@ const RIGHT = [
   ['/gallery', 'Gallery'],
   ['/contact', 'Contact'],
 ] as const;
-const MENU = [...LEFT, ['/#villa3d', 'The villa in 3D'], ...RIGHT] as const;
+const MENU = [...LEFT, ...(SHOW_VILLA_3D ? [['/#villa3d', 'The villa in 3D'] as const] : []), ...RIGHT];
 
 export function Nav() {
   const path = usePathname();

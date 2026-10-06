@@ -10,7 +10,8 @@ The full system is specified in [docs/booking-engine-spec.md](docs/booking-engin
 [docs/frontend-visual-guide.md](docs/frontend-visual-guide.md) (3D and motion rules).
 
 - **Phase 0 (done, client approved):** `prototype/`, a single-file HTML page, still live at the
-  domain until the cut-over. It is frozen; it is the visual reference for the port, not edited.
+  domain until the cut-over. It is the visual reference for the port, edited only for client
+  fixes that must reach the live site before the cut-over (and then in `apps/web` too).
 - **Phase 1 (current):** the real system in a pnpm + Turborepo monorepo. Build order:
   1 scaffold ✓ · 2 core ✓ · 3 public site ✓ · 4 booking +
   PayHere ✓ · 5 admin ✓ · 6 Beds24 ✓ · 7 production (PM2 release, deploy script, backups
@@ -119,7 +120,7 @@ docker compose up prototype                          # watch + serve on :5173
 
 **Two builds from one source.** `build` inlines every photo as base64: ~4 MB, fully offline, for
 sending over WhatsApp. `build:web` writes the photos to `assets/*.webp` and leaves only the 24px
-placeholders inline: a 0.93 MB document (356 KB compressed) the browser paints before the photos
+placeholders inline: a 0.43 MB document (206 KB compressed; 0.93 MB while three.js was in) the browser paints before the photos
 arrive. `images.js` treats `p.src` as an opaque URL, so neither mode needs a JS change.
 
 Neither build makes an external request except the Google Maps iframe, which loads lazily and only
@@ -325,7 +326,7 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
 
 | Guide item | Prototype | apps/web |
 |---|---|---|
-| 3D villa, orbit limits (polar π/4–π/2.1, distance 8–25, no pan) | `villa3d.js` | `villa3d.ts` (dynamic import) |
+| 3D villa, orbit limits (polar π/4–π/2.1, distance 8–25, no pan) — **off for now** (client, Oct 2026) | `villa3d.js` (import commented out in `main.js`, section `hidden`) | `villa3d.ts` (dynamic import), behind `SHOW_VILLA_3D` in `lib/villa.ts` |
 | Raycast hover glow + "✨ Name · Tap to inspect" tag, click → camera fly + info card | `villa3d.js` | `villa3d.ts` |
 | Custom GLSL water (waves, fresnel, caustics, sun glint, hover glow) | `water.*.glsl` | `water.ts` |
 | Cinematic hero (Ken Burns cross-fade, `<video>` slot kept for later) | `hero.js` | `hero.ts`, `sections/Hero.tsx` |
@@ -392,6 +393,12 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
 - `.nav__links a` sets the link colour, so the nav's olive button needs its own `color` rule.
 - GSAP warns "target not found" for every empty selector. Page heroes lack the home hero's
   script, rail and dots, so `initHero` skips intro steps with nothing to animate.
+- Modal `<dialog>`s render in the top layer, above every z-index. The custom cursor is a
+  `popover="manual"` (top layer too) and is hidden and re-shown after a modal opens so it stays
+  on top; the `.cursor` rule resets the popover's default margin, border and background.
+- Scrollbars are themed once, globally: `scrollbar-color` on `html` (inherited) and
+  `scrollbar-width: thin` on `*`, with a `::-webkit-scrollbar` fallback for Safari only
+  (`@supports not (scrollbar-color: auto)`). Same in the prototype, web and admin CSS.
 - three r186 removed `PCFSoftShadowMap` (it falls back with a warning); use `PCFShadowMap`.
 
 - `aspect-ratio` does nothing on an inline element — the room card image wrapper is a `<span>` and

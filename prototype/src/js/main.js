@@ -11,7 +11,9 @@ import { initMotion } from './motion.js';
 import { initMagnetic } from './magnetic.js';
 import { initCursor } from './cursor.js';
 import { initRipple } from './ripple.js';
-import { initVilla } from './villa3d.js';
+// The 3D villa is off at the client's request (October 2026). To bring it back, restore this
+// import and the initVilla call, and drop `hidden` from the section and the menu link.
+// import { initVilla } from './villa3d.js';
 import { money, onCurrency } from './store.js';
 
 const cap = detect();
@@ -28,7 +30,7 @@ initGallery();
 initBooking();
 initHero(cap);
 initMotion(cap);
-initVilla(cap);
+// initVilla(cap);
 if (cap.cursor) {
   initCursor();
   initMagnetic();

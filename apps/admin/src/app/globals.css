@@ -17,6 +17,26 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    /* Thin scrollbars on the page's colours, in every scroller */
+    scrollbar-color: rgb(107 100 87 / 0.4) transparent;
+  }
+  * {
+    scrollbar-width: thin;
+  }
+  @supports not (scrollbar-color: auto) {
+    /* Safari */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      border: 2px solid transparent;
+      border-radius: 8px;
+      background: rgb(107 100 87 / 0.4) padding-box;
+    }
   }
   body {
     background: var(--color-linen);

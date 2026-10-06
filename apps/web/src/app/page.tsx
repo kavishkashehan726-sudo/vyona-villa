@@ -11,6 +11,7 @@ import { Statement } from '@/components/sections/Statement';
 import { Villa3D } from '@/components/sections/Villa3D';
 import { Welcome } from '@/components/sections/Welcome';
 import { getRooms } from '@/lib/site';
+import { SHOW_VILLA_3D } from '@/lib/villa';
 
 export default async function Home() {
   const rooms = await getRooms();
@@ -19,7 +20,7 @@ export default async function Home() {
       <Hero />
       <Welcome />
       <Rooms rooms={rooms} />
-      <Villa3D />
+      {SHOW_VILLA_3D && <Villa3D />}
       <Explore />
       <Amenities />
       <Statement />

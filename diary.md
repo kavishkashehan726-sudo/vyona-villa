@@ -5,6 +5,36 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-06 — Client fixes: 3D villa off, scrollbars, cursor over dialogs
+
+### Done
+
+- The client asked to take the 3D villa section down for now. In `apps/web` it sits behind
+  `SHOW_VILLA_3D = false` (`lib/villa.ts`), which drops the home section and the mobile-menu
+  link; nothing else changed, so turning it back on is one line. In the prototype the section
+  and menu item are `hidden` and the `initVilla` import is commented out, so three.js leaves the
+  bundle (the web build went from 0.93 MB to 420 KB). The Welcome "Our story" link pointed at
+  `#villa3d`; it now goes to `#experiences`.
+- Thin scrollbars in the page's taupe, everywhere: the page, the booking sheet, the room
+  dialog, and the admin. Safari gets a `::-webkit-scrollbar` fallback.
+- The custom cursor disappeared over the room dialog and the lightbox, because modal dialogs
+  render in the top layer. The cursor is now a manual popover, re-shown after a modal opens.
+
+### Checked
+
+- `pnpm typecheck` passes; the prototype `build:web` has no three.js left.
+- Playwright on the prototype build and on dev `apps/web` (`?full=1`): no 3D section or menu
+  link, `scrollbar-width: thin` on the page, the drawer and the dialog, the cursor open and
+  visible over the room dialog, no page errors. In dev, Turbopack still loads the 744-byte
+  villa3d loader stub, but never three.js itself.
+
+### Next
+
+- Deploy the prototype (`./scripts/deploy.sh --build`) once the owner says so, and push so
+  `apps/web` picks it up on the next app deploy.
+
+---
+
 ## 2026-10-06 — First production deploy and self-healing
 
 ### Done

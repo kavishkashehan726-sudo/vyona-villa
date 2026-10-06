@@ -58,6 +58,14 @@ body {
   text-rendering: optimizeLegibility;
 }
 body.is-locked { overflow: hidden; }
+/* Thin scrollbars on the page's colours, in every scroller: the page, sheets, dialogs. */
+html { scrollbar-color: rgb(107 100 87 / 0.4) transparent; }
+* { scrollbar-width: thin; }
+@supports not (scrollbar-color: auto) { /* Safari */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 8px; background: rgb(107 100 87 / 0.4) padding-box; }
+}
 img { display: block; max-width: 100%; height: auto; }
 a { color: inherit; }
 button { font: inherit; color: inherit; }
@@ -687,7 +695,10 @@ dialog::backdrop { background: rgb(28 28 20 / 0.6); backdrop-filter: blur(4px); 
 
 .book-bar { display: none; }
 
-.cursor { position: fixed; left: 0; top: 0; z-index: 150; pointer-events: none; display: none; opacity: 0; transition: opacity 0.3s; }
+.cursor {
+  position: fixed; inset: 0 auto auto 0; z-index: 150; pointer-events: none; display: none; opacity: 0; transition: opacity 0.3s;
+  margin: 0; padding: 0; border: 0; background: none; overflow: visible; /* undo the popover defaults */
+}
 .has-cursor body, .has-cursor a, .has-cursor button, .has-cursor label { cursor: none; }
 .has-cursor .cursor { display: block; }
 .cursor__dot, .cursor__ring { position: fixed; left: 0; top: 0; border-radius: 50%; will-change: transform; }

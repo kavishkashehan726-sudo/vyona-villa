@@ -1,6 +1,10 @@
 // The places in the 3D villa. Shared by the server markup (zone buttons,
 // fallback slides) and the WebGL scene (camera targets, label anchors).
 
+// Off at the client's request (October 2026), for now. Turning it back on brings back the home
+// page section and its menu link; the scene, the water shader and the fallback are unchanged.
+export const SHOW_VILLA_3D = false;
+
 export type Vec3 = [x: number, y: number, z: number];
 
 export type Zone = {
