@@ -14,6 +14,7 @@ and proxies to the two local ports.
 |---|---|
 | `ecosystem.config.cjs` | the three PM2 processes, with memory limits; ports bound to 127.0.0.1 |
 | `backup.sh` | nightly `pg_dump` and photo tarball into `backups/` |
+| `watchdog.sh` | starts the apps at boot, and again whenever PM2 can't bring them back |
 | `env.example` | template for the server's `.env` (secrets live there, never in git) |
 | `../scripts/build-release.sh` | assembles the release (CI runs it on main) |
 | `../scripts/deploy-app.sh` | downloads CI's release, uploads it, migrates, switches, restarts, checks health |
@@ -96,13 +97,15 @@ pm2 set pm2-logrotate:max_size 10M
 pm2 set pm2-logrotate:retain 3
 ```
 
-Then open `crontab -e` and add two lines. The first restarts the apps after a reboot (no root
-needed). The second runs the backup at 02:30 Colombo time, assuming the server clock is UTC
-(check with `date`).
+Then open `crontab -e` and add these lines (no root needed). The first two run `watchdog.sh`,
+which starts the apps after a reboot and checks them every 5 minutes (see *Self-healing*). The
+third runs the backup at 02:30 Colombo time. Cron uses the server's clock, which on the VPS is
+Colombo time (`date` shows `+0530`); on a UTC server, write `0 21` instead.
 
 ```
-@reboot . $HOME/.nvm/nvm.sh && pm2 resurrect
-0 21 * * * $HOME/app/backup.sh >> $HOME/app/backups/backup.log 2>&1
+@reboot $HOME/app/watchdog.sh
+*/5 * * * * $HOME/app/watchdog.sh
+30 2 * * * $HOME/app/backup.sh >> $HOME/app/backups/backup.log 2>&1
 ```
 
 ### 3. In CloudPanel
@@ -173,6 +176,22 @@ against the new schema.
 
 **Logs.** Run `pm2 logs`, or `pm2 logs vyona-worker --lines 100`. They're kept in `~/.pm2/logs`,
 rotated at 10 MB with three files kept.
+
+## Self-healing
+
+| What happens | What brings it back |
+|---|---|
+| An app crashes | PM2, at once. A crash loop backs off, up to 15 s between tries. |
+| An app grows past its memory limit | PM2 restarts it. |
+| Postgres or Redis goes down | Nothing needs restarting: the apps stay up, `/api/health` answers 503, and they reconnect when it's back. |
+| The server reboots | `watchdog.sh` from `@reboot`. Postgres, Redis, nginx and cron start on their own (systemd). |
+| The PM2 daemon dies, or an app ends up stopped or errored | `watchdog.sh`, within 5 minutes. |
+| An app is online but its port doesn't answer, or a lost copy holds the port | `watchdog.sh` stops whatever holds the port, then starts the apps. |
+
+The watchdog does nothing while all three apps are online and both ports answer. It waits
+30 seconds and checks again before acting, so it doesn't step on a restart PM2 is already doing,
+and it skips a run while a deploy holds `.deploy.lock`. Everything it does goes to
+`~/app/watchdog.log`, which `--status` shows.
 
 ## Backups
 

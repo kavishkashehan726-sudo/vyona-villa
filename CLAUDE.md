@@ -76,7 +76,8 @@ packages/
   ui/               tokens.css (Tailwind 4 @theme), icons.tsx, logo.tsx (swap point for the
                     official logo)
 docker/             dev.Dockerfile (development only; production runs under PM2)
-deploy/             ecosystem.config.cjs (PM2), backup.sh, env.example, README (server runbook)
+deploy/             ecosystem.config.cjs (PM2), backup.sh, watchdog.sh, env.example, README
+                    (server runbook)
 .github/workflows/  ci.yml: typecheck, test, build against postgres + redis services; on main,
                     the `vyona-release` artifact
 brand/              vyona-logo.svg, vyona-mark.svg (redrawn from the template nav logo)
@@ -159,13 +160,19 @@ restarts the apps (after an `.env` edit). The server's
   `redis://…/5`. Don't change the shared Postgres or Redis settings. The site user's
   Node 24 and PM2 7 come from its own nvm; the system's Node 22 and PM2 6 belong to the other
   sites.
+- **Self-healing:** PM2 restarts crashed apps. `deploy/watchdog.sh` runs from the site user's
+  crontab at `@reboot` and every 5 minutes: when fewer than three apps are online or a port
+  doesn't answer (twice, 30 s apart), it deletes the apps, kills any untracked holder of the
+  ports and starts them again. A 503 counts as answering (DB or Redis down; the apps reconnect).
+  It shares `.deploy.lock` with `deploy-app.sh`'s restart and logs only when it acts.
+  No root `pm2 startup` unit, unlike the other sites on the server.
 - Needs from the owner of the server: Postgres 17 and Redis (noeviction, appendonly) installed
-  by root, Node 24 (nvm) and PM2 for the site user, the crontab (`@reboot pm2 resurrect`,
-  nightly backup), the two CloudPanel reverse-proxy sites and `client_max_body_size 16m` on
+  by root, Node 24 (nvm) and PM2 for the site user, the crontab (watchdog at boot and every
+  5 minutes, nightly backup), the two CloudPanel reverse-proxy sites and `client_max_body_size 16m` on
   the admin vhost.
 - Indexing is `SITE_INDEXABLE=1` in the server's `.env`, read at run time by the layout's
   `robots` and `app/robots.ts`; `deploy-app.sh --restart`, no rebuild.
-- Backups: `backup.sh` from the site user's crontab at 21:00 UTC (02:30 Colombo):
+- Backups: `backup.sh` from the site user's crontab at 02:30 (the VPS clock is Colombo time):
   `pg_dump -Fc` kept 14 days, a photo tarball kept 3, files mode 600.
 
 ## Design tokens

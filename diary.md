@@ -5,6 +5,46 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-06 — First production deploy and self-healing
+
+### Done
+
+- The owner did the server setup: the `vyona` Postgres role and database, the proxied `admin`
+  DNS record, and the CloudPanel reverse-proxy site with its Let's Encrypt certificate and
+  `client_max_body_size 16m`. The server's `.env` uses the dev admin login until the real email
+  address exists.
+- First deploy of `27a77c9`: two migrations, the seed (7 rooms, 2 rate rules, the admin), 49
+  photos. The admin answers at https://admin.vyonaweligama.com; the public site runs on :3020
+  behind no proxy yet, so the prototype stays at the apex.
+- `deploy/watchdog.sh`, from the site user's crontab at `@reboot` and every 5 minutes, replaces
+  `@reboot pm2 resurrect`. When fewer than three apps are online or a port doesn't answer,
+  twice 30 s apart, it deletes the apps, stops any untracked holder of the ports and starts them
+  again. It logs only when it acts. `deploy-app.sh` uploads it, and its restart takes the same
+  `.deploy.lock`.
+- The runbook has a *Self-healing* table: what fails and what brings it back.
+
+### Checked
+
+- Through Cloudflare: `/login` 200, `/api/health` 200, the sign-in page renders.
+- Postgres, Redis, nginx and cron are enabled at boot; all three apps online, no watchdog log.
+- Not run: the break-and-heal tests (SIGKILL, `pm2 kill`, a simulated reboot, stopped apps, an
+  untracked copy on the admin port). Killing the production apps was refused by the
+  permission check; the owner can run them.
+
+### Problems hit
+
+- The server clock is Colombo time (`+0530`), not UTC: the backup line is `30 2 * * *`.
+- `gh run download` from the owner's connection ran at about 40 KB/s: half an hour for the
+  release, before uploading 396 MB of it again. The server fetched the same artifact in 3 s
+  from a signed URL.
+
+### Next
+
+- Let the server fetch the release in every deploy.
+- Cut-over once the client signs off; change the admin login once the real email exists.
+
+---
+
 ## 2026-10-06 — Phase 1 step 7: production under PM2
 
 ### Done

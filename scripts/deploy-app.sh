@@ -13,7 +13,7 @@
 #                                      back to without migrating (this is the rollback)
 #   scripts/deploy-app.sh --images     also copy images/ up, for the photo import
 #   scripts/deploy-app.sh --backups    copy the server's backups/ down to ./backups
-#   scripts/deploy-app.sh --status     processes, releases, health and the last backup
+#   scripts/deploy-app.sh --status     processes, releases, health, the last backup and watchdog log
 #   scripts/deploy-app.sh --restart    restart the apps, e.g. after editing the server's .env
 set -euo pipefail
 
@@ -42,7 +42,9 @@ check() { curl -fsS -o /dev/null -w '%{http_code}' \"http://127.0.0.1:\$1/api/he
 # process's exit event comes in late, PM2 treats it as a crash and starts a second copy it then
 # loses track of. That copy keeps the port and the tracked one loops on EADDRINUSE. After a
 # delete, the late exit event is ignored. Either way the apps are down for a second or two.
-restart() { remote "pm2 delete ecosystem.config.cjs >/dev/null 2>&1 || true
+# The lock keeps watchdog.sh from stepping in meanwhile.
+restart() { remote "exec 9>.deploy.lock; flock 9
+pm2 delete ecosystem.config.cjs >/dev/null 2>&1 || true
 pm2 start ecosystem.config.cjs >/dev/null && pm2 save >/dev/null"; }
 health() {
   remote "$HEALTH
@@ -65,7 +67,8 @@ while [ $# -gt 0 ]; do
       remote "pm2 list; echo; echo \"current: \$(readlink current)\"; ls -1t releases; echo
 $HEALTH
 echo \"health: web \$(check \${wp:-3000}) admin \$(check \${ap:-3001})\"
-tail -n 3 backups/backup.log 2>/dev/null || echo 'no backup yet'"; exit 0 ;;
+tail -n 3 backups/backup.log 2>/dev/null || echo 'no backup yet'
+tail -n 3 watchdog.log 2>/dev/null || echo 'the watchdog has had nothing to do'"; exit 0 ;;
     --restart) echo "→ restart"; restart; health; exit 0 ;;
     *) echo "unknown option: $1"; exit 1 ;;
   esac
@@ -87,7 +90,7 @@ command -v pm2 >/dev/null || { echo '✗ no pm2 for $DEPLOY_USER: see deploy/REA
 node -e 'process.exit(+process.versions.node.split(\".\")[0] >= 24 ? 0 : 1)' || { echo '✗ Node 24 is needed'; exit 1; }"
 
 up --chmod=F644 "$ROOT/deploy/ecosystem.config.cjs" "$TARGET:$APP/"
-up --chmod=F755 "$ROOT/deploy/backup.sh" "$TARGET:$APP/"
+up --chmod=F755 "$ROOT/deploy/backup.sh" "$ROOT/deploy/watchdog.sh" "$TARGET:$APP/"
 if [ "$IMAGES" = 1 ]; then
   echo "→ client photos"
   up --chmod=F644,D755 "$ROOT/images/" "$TARGET:$APP/images/"
