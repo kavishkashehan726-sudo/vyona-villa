@@ -5,6 +5,24 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-08 — Washed-out Beyond card, preview notice kept coming back
+
+### Done
+
+- The Beyond VYONA photo on the home page looked white: `.pillar__img > span` (the parallax
+  wrapper) also matched the "Beach photo to come" label, so the label's 90% linen background
+  covered the whole photo and its text sat above the frame. Now `> [data-parallax]`.
+- The preview notice remembered a close only per tab (`sessionStorage`), so it came back on
+  every new visit. It now uses `localStorage`, and starts `hidden` so it no longer flashes
+  before the script runs.
+
+### Checked
+
+- web typecheck. Dev at 1728: the label is a small tag again and the photo is clear; closing
+  the notice and reloading keeps it hidden.
+
+---
+
 ## 2026-10-08 — The official logo
 
 ### Done

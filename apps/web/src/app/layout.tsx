@@ -93,7 +93,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <RoomDialog rooms={rooms} />
         <div className="toast" role="status" aria-live="polite" data-toast />
 
-        <aside className="proto-badge" data-proto-badge>
+        <aside className="proto-badge" data-proto-badge hidden>
           <p>
             <strong>Preview</strong>{' '}
             <span className="proto-badge__long">

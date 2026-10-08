@@ -434,6 +434,11 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
   centres a modal `<dialog>`; `site.css` puts it back on `dialog`.
 - three r186 removed `PCFSoftShadowMap` (it falls back with a warning); use `PCFShadowMap`.
 
+- The parallax wrapper inside `.pillar__img` is styled as `> [data-parallax]`, not `> span`: the
+  "Beach photo to come" label is a span too, and the bare selector stretched its linen
+  background over the whole photo (the Beyond card looked washed out).
+- The preview notice is rendered `hidden`; `initBadge` shows it unless `localStorage`
+  `vy-badge` is `off`, so a closed notice stays closed across visits without a flash.
 - `aspect-ratio` does nothing on an inline element — the room card image wrapper is a `<span>` and
   needs `display: block`.
 - Images inside an aspect-ratio box need `width/height: 100%; object-fit: cover`, or the box grows

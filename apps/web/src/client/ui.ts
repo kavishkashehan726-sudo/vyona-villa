@@ -20,18 +20,22 @@ export function lockScroll(on: boolean) {
   document.body.classList.toggle('is-locked', locks > 0);
 }
 
+// The preview notice starts hidden, so a visitor who closed it never sees it flash on the next
+// page; closing it holds in this browser across visits.
 export function initBadge() {
   const badge = $('[data-proto-badge]');
   if (!badge) return;
+  let closed = false;
   try {
-    if (sessionStorage.getItem('vy-badge') === 'off') badge.hidden = true;
+    closed = localStorage.getItem('vy-badge') === 'off';
   } catch {
     /* storage unavailable */
   }
+  badge.hidden = closed;
   $('[data-proto-close]', badge)?.addEventListener('click', () => {
     badge.hidden = true;
     try {
-      sessionStorage.setItem('vy-badge', 'off');
+      localStorage.setItem('vy-badge', 'off');
     } catch {
       /* storage unavailable */
     }
