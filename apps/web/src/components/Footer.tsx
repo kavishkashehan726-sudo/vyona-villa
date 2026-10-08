@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Icon } from '@vyona/ui';
+import { Icon, Logo } from '@vyona/ui';
 import { SOCIAL_LABELS, SOCIALS, type ContactDetails } from '@vyona/core';
 import { ABOUT_HREF } from '@/lib/content';
 import { SOCIAL_ICON } from '@/lib/social';
@@ -16,7 +16,7 @@ export function Footer({ social }: { social: ContactDetails['social'] }) {
   return (
     <footer className="footer">
       <Link className="brand brand--foot" href="/" aria-label="VYONA, home">
-        <span className="brand__word">VYONA</span>
+        <Logo compact className="brand__logo" />
         <span className="brand__sub">Weligama · Sri Lanka</span>
       </Link>
       <nav aria-label="Footer">

@@ -7,7 +7,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
-import { Mark } from '@vyona/ui';
+import { Logo } from '@vyona/ui';
 import { lockScroll } from '@/client/ui';
 import { ABOUT_HREF } from '@/lib/content';
 import { SHOW_VILLA_3D } from '@/lib/villa';
@@ -95,8 +95,7 @@ export function Nav() {
       <nav className="nav__inner" aria-label="Main">
         <ul className="nav__links nav__links--left">{links(LEFT)}</ul>
         <Link className="brand" href="/" aria-label="VYONA, home">
-          <Mark className="brand__mark" />
-          <span className="brand__word">VYONA</span>
+          <Logo compact className="brand__logo" />
           <span className="brand__sub">Weligama · Sri Lanka</span>
         </Link>
         <ul className="nav__links nav__links--right">

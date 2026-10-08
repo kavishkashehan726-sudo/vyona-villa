@@ -12,7 +12,7 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
   return (
     <main className="login">
       <div className="login__card">
-        <Logo className="login__logo" />
+        <Logo compact className="login__logo" title="VYONA" />
         <p className="eyebrow mt-8 text-center">Owner&rsquo;s desk</p>
         <LoginForm next={typeof next === 'string' ? next : '/'} />
       </div>

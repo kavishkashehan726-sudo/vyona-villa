@@ -74,14 +74,14 @@ packages/
                     admin (grid, setNights, manual booking, move, cancel), auth (sessions),
                     beds24/ (types, http client for API v2, mock on Redis, mode switch),
                     channel (pushAri, pushBooking, importBooking, pullBooking, pollBookings)
-  ui/               tokens.css (Tailwind 4 @theme), icons.tsx, logo.tsx (swap point for the
-                    official logo)
+  ui/               tokens.css (Tailwind 4 @theme), icons.tsx, logo.tsx (the official logo:
+                    Mark, Logo, Logo compact)
 docker/             dev.Dockerfile (development only; production runs under PM2)
 deploy/             ecosystem.config.cjs (PM2), backup.sh, watchdog.sh, env.example, README
                     (server runbook)
 .github/workflows/  ci.yml: typecheck, test, build against postgres + redis services; on main,
                     the `vyona-release` artifact
-brand/              vyona-logo.svg, vyona-mark.svg (redrawn from the template nav logo)
+brand/              vyona-logo.svg, vyona-mark.svg (the client's official logo, in bronze)
 docs/               specs + screenshots for the README
 scripts/            deploy.sh (prototype, retired), build-release.sh + deploy-app.sh (Phase 1),
                     deploy.env.example (deploy.env is gitignored)
@@ -230,7 +230,13 @@ elements, pointed-oval seed logo.
   account.
 - Money in integer cents, USD. `RoomDay` holds one row per room per night, created on demand and
   locked with `SELECT … FOR UPDATE` for holds.
-- Logo: the redrawn SVG in `packages/ui/src/logo.tsx` until the official file arrives.
+- **Logo: the client's official SVG** (Oct 2026), in bronze `#A88B5E` at the client's request
+  ("the light brown"). `logo.tsx` keeps its potrace paths in three groups: `MARK` (dot, arc,
+  seed), `WORD` (VYONA) and `SUB` (WELIGAMA · SRI LANKA), all under one
+  `translate(0 1024) scale(0.1 -0.1)`. The official sub line is a fifth of the wordmark's
+  height, unreadable below ~300px wide, so the nav, footer and admin login use `<Logo compact>`
+  and set that line as text (`.brand__sub`). The full logo is in `brand/vyona-logo.svg` for
+  print. The favicons are the mark on a square viewBox.
 - Client reference images are for layout only; use the real photos, with a slot for a beach shot.
 - Photos are not `next/image`: `media:import` makes WebP (1200px, q60, as the prototype) plus a
   24px LQIP on the `Media` row, `/media/…` serves them with a one-year cache, and `Photo` renders
@@ -458,7 +464,7 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
 ## Waiting on the client
 
 Whether guests may pay at the villa (`payAtVilla`), the PayHere charge currency (USD or LKR),
-official logo, Tara's keywords, whether the Booking.com rate is the nightly rate or includes
+Tara's keywords, whether the Booking.com rate is the nightly rate or includes
 the service charge or a markup, the Beds24 room ids (and a check of blackout against the real
 account), About copy and host photos, Explore subpage copy (both pages blocked until then), the
 real phone, email and social links (the owner enters them in admin Settings), high-res photos (beach, food, video), PayHere merchant account, Beds24

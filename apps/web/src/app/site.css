@@ -216,9 +216,11 @@ hr { border: 0; margin: 0; }
 .nav__links .btn { color: var(--linen); }
 .nav__links .btn::after { content: none; }
 
-.brand { display: grid; justify-items: center; text-decoration: none; color: var(--ink); line-height: 1; }
-.brand__mark { width: 40px; height: 29px; color: var(--ink); margin-bottom: 5px; }
-.brand__word { font-family: var(--serif); font-size: 1.7rem; font-weight: 500; letter-spacing: 0.3em; margin-right: -0.3em; }
+.brand { display: grid; justify-items: center; text-decoration: none; color: var(--bronze); line-height: 1; }
+/* The official logo. Its own WELIGAMA · SRI LANKA line is about a fifth of the wordmark's
+   height, too small to read at nav or footer size, so both show the logo without it (compact)
+   and set that line as text. */
+.brand__logo { display: block; width: 116px; height: auto; }
 .brand__sub { font-family: var(--sans); font-size: 0.48rem; letter-spacing: 0.38em; text-transform: uppercase; margin-top: 6px; margin-right: -0.38em; }
 
 .nav__toggle { display: none; justify-self: end; width: 44px; height: 44px; border: 0; background: none; cursor: pointer; }
@@ -661,8 +663,8 @@ hr { border: 0; margin: 0; }
   display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1.6rem 3rem;
   max-width: var(--maxw); margin: 0 auto; padding: 2.4rem var(--gutter) 2rem;
 }
-.brand--foot { justify-items: start; }
-.brand--foot .brand__word { font-size: 1.5rem; }
+.brand--foot .brand__logo { width: 150px; }
+.brand--foot .brand__sub { font-size: 0.54rem; margin-top: 8px; }
 .footer__links { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem 2.4rem; font-family: var(--sans); font-size: 0.68rem; letter-spacing: 0.24em; text-transform: uppercase; }
 .footer__links a { text-decoration: none; }
 .footer__tag { display: flex; align-items: center; gap: 1rem; margin: 0; font-family: var(--sans); font-size: 0.62rem; letter-spacing: 0.26em; text-transform: uppercase; }
@@ -880,9 +882,8 @@ dialog::backdrop { background: rgb(28 28 20 / 0.6); backdrop-filter: blur(4px); 
   .nav__inner { grid-template-columns: 44px 1fr 44px; }
   .nav__inner .brand { grid-column: 2; }
   .nav__toggle { display: block; grid-column: 3; }
-  .brand__mark { width: 32px; height: 23px; margin-bottom: 3px; }
-  .brand__word { font-size: 1.35rem; }
-  .brand__sub { font-size: 0.42rem; }
+  .nav__inner .brand__logo { width: 92px; }
+  .brand__sub { font-size: 0.42rem; margin-top: 4px; }
   .hero { grid-template-columns: 1fr; align-content: end; padding-bottom: 5.5rem; }
   .hero__rail { display: none; }
   .hero__shade { background: linear-gradient(0deg, rgb(30 30 22 / 0.75) 0%, rgb(30 30 22 / 0.25) 55%, rgb(30 30 22 / 0.1)); }

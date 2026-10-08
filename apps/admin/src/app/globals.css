@@ -580,9 +580,9 @@
   }
   .login__logo {
     display: block;
-    width: 9rem;
+    width: 11rem;
     margin: 0 auto;
-    color: var(--color-olive);
+    color: var(--color-bronze);
   }
   .login__foot {
     margin-top: 1.5rem;

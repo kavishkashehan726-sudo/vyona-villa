@@ -204,7 +204,7 @@ packages/
 prototype/    Phase 0: the single-file HTML prototype
 docker/       the development image
 deploy/       PM2 config, backup script, server runbook
-brand/        logo and mark, redrawn as SVG
+brand/        the logo and its mark as SVG
 docs/         specifications and screenshots
 ```
 

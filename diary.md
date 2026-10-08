@@ -5,6 +5,37 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-08 — The official logo
+
+### Done
+
+- The client sent the official logo (SVG) and said ours was wrong. It replaces the redrawn one
+  everywhere: `packages/ui/src/logo.tsx` (`Mark`, `Logo`, `Logo compact`), both favicons and
+  `brand/vyona-logo.svg` / `vyona-mark.svg`.
+- Colour: bronze `#A88B5E`, "the light brown our current logo have" (the admin rail mark).
+  The nav and footer logos were ink before.
+- Nav, footer and admin login use the compact logo (mark + VYONA); WELIGAMA · SRI LANKA is
+  set as text under it, because the official line is a fifth of the wordmark's height and
+  would be about 4px tall at nav size.
+- The decorative marks (statement, CTA, booking reference, admin rail) take the new mark in
+  their existing boxes and colours.
+
+### Checked
+
+- typecheck. Dev at 1440: nav logo centred, bronze, sub line readable; the footer showed the
+  official sub line as a smudge, hence the compact logo there too.
+
+### Problems hit
+
+- The dev machine's disk was saturated (IO pressure ~85%), so Turbopack took minutes per page
+  and hung once after an HMR internal error; `docker compose restart app`.
+
+### Next
+
+- Push and deploy when asked. The live domain is still suspended by Namecheap (see CLAUDE.md).
+
+---
+
 ## 2026-10-08 — Client adjustments: copy, editable contact details, drafts blocked
 
 ### Done
