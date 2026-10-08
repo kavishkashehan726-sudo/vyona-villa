@@ -476,7 +476,11 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
   `failed-whois-verification.namecheap.com` because the registrant contact was never verified,
   so the whole site (apex and admin) is unreachable although the VPS is healthy. The owner
   verifies the registrant email in Namecheap, then checks the nameservers are Cloudflare's again.
-  Check with `dig +short NS vyonaweligama.com` at the start of each session until it's fixed.
+  Check at the registry, not the local resolver (which kept a stale Cloudflare answer on
+  2026-10-08): `dig +noall +authority NS vyonaweligama.com @a.gtld-servers.net`. Until it shows
+  Cloudflare's nameservers, browsers get Namecheap's parking IP; one that remembers Cloudflare's
+  HTTP/3 `alt-svc` then fails with ERR_QUIC_PROTOCOL_ERROR. The server and Cloudflare are fine
+  (`curl --resolve` to a Cloudflare IP returns 200).
 - **Search engines (asked 2026-10-06):** the live site is still `noindex` with `Disallow: /`.
   Bring it up at the start of each session until it's done: once the client confirms real
   prices, set `SITE_INDEXABLE=1` in the server's `.env` and run `scripts/deploy-app.sh --restart`.
