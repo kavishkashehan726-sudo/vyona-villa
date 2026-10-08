@@ -32,8 +32,13 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
   override that drops the postgres/redis host ports (the containers don't need them).
 - Turbopack hung on its first compile under heavy host load; restarting the app fixed it.
 
+- Deployed `984218b`; on the server (127.0.0.1:3020) the new copy is there and `/about`,
+  `/explore/food` are 404. From outside the site does not answer at all: Namecheap has suspended
+  the domain for unverified WHOIS contact details (nameservers `failed-whois-verification…`).
+
 ### Next
 
+- The owner verifies the registrant contact at Namecheap so the domain comes back.
 - The owner enters the real phone, email and socials in admin Settings.
 - Switch on indexing once prices are confirmed.
 

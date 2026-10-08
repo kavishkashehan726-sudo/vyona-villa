@@ -446,6 +446,11 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
 
 ## Remind the owner
 
+- **Domain suspended (found 2026-10-08):** Namecheap moved vyonaweligama.com's nameservers to
+  `failed-whois-verification.namecheap.com` because the registrant contact was never verified,
+  so the whole site (apex and admin) is unreachable although the VPS is healthy. The owner
+  verifies the registrant email in Namecheap, then checks the nameservers are Cloudflare's again.
+  Check with `dig +short NS vyonaweligama.com` at the start of each session until it's fixed.
 - **Search engines (asked 2026-10-06):** the live site is still `noindex` with `Disallow: /`.
   Bring it up at the start of each session until it's done: once the client confirms real
   prices, set `SITE_INDEXABLE=1` in the server's `.env` and run `scripts/deploy-app.sh --restart`.
