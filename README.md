@@ -129,14 +129,36 @@ cp .env.example .env      # set ADMIN_EMAIL and ADMIN_PASSWORD (10+ characters) 
 docker compose up
 ```
 
-The app container installs dependencies, applies migrations, seeds the rooms and rate rules,
-imports photos and starts every app:
+That one command also starts the dev servers. The `app` service runs
+`pnpm install && pnpm db:deploy && pnpm db:seed && pnpm media:import && pnpm dev`, and
+`pnpm dev` is Turborepo running `next dev` for the site and the admin plus the worker
+(`tsx watch`), all in that container, with hot reload on the bind-mounted source.
+
+The first start takes a few minutes (image build and install). It is ready when the log shows
+`@vyona/web:dev: ✓ Ready`; the first visit to each page then compiles it, so that load is slow.
 
 | Service | URL |
 |---|---|
 | Public site | http://localhost:3000 |
 | Admin | http://localhost:3001 |
 | Mailpit (catches every email) | http://localhost:8025 |
+
+To run it in the background instead:
+
+```bash
+docker compose up -d                                  # start
+docker logs -f --tail 50 vyona_villa-app-1            # watch for "✓ Ready"
+docker compose down                                   # stop (data stays in the volumes)
+```
+
+If nothing answers on :3000:
+
+- `docker compose ps` shows `app` as `Created`, not running: a port it needs is taken, usually
+  5432 or 6379 by another project's Postgres or Redis (`docker ps` shows which). Stop that
+  container, or change the host side of `ports` for `postgres`/`redis`; the app talks to them
+  over the compose network, not through those ports.
+- The log stops at `○ Compiling …`: Turbopack hung on a busy machine. `docker compose restart app`.
+- After editing `.env`, use `docker compose up -d app`; `restart` does not re-read it.
 
 The client's photographs are not in this repository. The site runs without them, with empty
 photo slots. To use your own, put them in `images/` and map them in
