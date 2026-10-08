@@ -1,50 +1,60 @@
-// Contact details (placeholders) and the lazy Google Map, the only
-// third-party request on the site.
+// Contact details (set by the owner in the admin's settings) and the lazy
+// Google Map, the only third-party request on the site. Copy is the client's.
 
+import { phoneHref, SOCIAL_LABELS, SOCIALS, whatsappHref } from '@vyona/core';
 import { Icon } from '@vyona/ui';
-import { CONTACT } from '@/lib/site';
+import { getContact } from '@/lib/site';
+import { SOCIAL_ICON, socialText } from '@/lib/social';
 
-export function Contact({ headingLevel = 2 }: { headingLevel?: 1 | 2 }) {
+export async function Contact({ headingLevel = 2 }: { headingLevel?: 1 | 2 }) {
   const H = headingLevel === 1 ? 'h1' : 'h2';
+  const c = await getContact();
   return (
     <section className="contact" id="contact" aria-labelledby="contact-title">
       <div className="contact__text reveal">
         <p className="eyebrow">Find us</p>
         <H className="h2" id="contact-title">
-          Just beyond the bustle of Weligama.
+          Close to Weligama.
+          <br />A little closer to nature.
         </H>
         <p>
-          Ten minutes on foot to the beach, a short tuk-tuk ride to Mirissa. Message us any time: we&rsquo;re happy to
-          arrange airport pickups, surf lessons or a table for dinner.
+          VYONA sits just inland from Weligama, surrounded by tropical greenery and away from the busiest part of town.
+          The beach, caf&eacute;s and restaurants are all close by&nbsp;&mdash; while back at VYONA, things feel
+          altogether quieter.
+        </p>
+        <p>
+          Need a tuk-tuk, airport transfer, surf lesson or dinner recommendation? We&rsquo;re always happy to help.
         </p>
         <ul className="contact__list">
           <li>
             <Icon name="pin" className="i" />
-            <span>
-              {CONTACT.street}, {CONTACT.town}, {CONTACT.country}
-            </span>
+            <span>{c.address}</span>
           </li>
           <li>
             <Icon name="phone" className="i" />
-            <a href={CONTACT.phoneHref}>{CONTACT.phone}</a>
+            <a href={phoneHref(c.phone)}>{c.phone}</a>
           </li>
           <li>
             <Icon name="mail" className="i" />
-            <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>
+            <a href={`mailto:${c.email}`}>{c.email}</a>
           </li>
-          <li>
-            <Icon name="insta" className="i" />
-            <a href={CONTACT.instagramHref} rel="noopener">
-              {CONTACT.instagram}
-            </a>
-          </li>
+          {SOCIALS.filter((k) => c.social[k]).map((k) => (
+            <li key={k}>
+              <Icon name={SOCIAL_ICON[k]} className="i" />
+              <a href={c.social[k]} target="_blank" rel="noopener" aria-label={`VYONA on ${SOCIAL_LABELS[k]}`}>
+                {socialText(k, c.social[k])}
+              </a>
+            </li>
+          ))}
         </ul>
-        <a className="btn btn--line magnetic" href={CONTACT.whatsapp} target="_blank" rel="noopener" data-cursor="Chat">
-          <Icon name="whatsapp" className="i" /> Message us on WhatsApp
-        </a>
-        <p className="proto-note">Address, phone, email and social handles are placeholders.</p>
+        {c.whatsapp && (
+          <a className="btn btn--line magnetic" href={whatsappHref(c.whatsapp)} target="_blank" rel="noopener" data-cursor="Chat">
+            <Icon name="whatsapp" className="i" /> Message us on WhatsApp
+          </a>
+        )}
+        {!c.saved && <p className="proto-note">Phone, WhatsApp and email are placeholders.</p>}
       </div>
-      <div className="contact__map" data-map>
+      <div className="contact__map" data-map data-map-q={c.mapQuery}>
         <div className="contact__map-fallback">
           <Icon name="pin" className="i-lg" />
           <p>

@@ -281,6 +281,11 @@ elements, pointed-oval seed logo.
 - Owner changes queue Booking.com sync through `lib/sync`, which logs and swallows queue
   errors: a save never fails because Redis is down, and the fallback sync catches up.
 - A move doesn't email the guest; a cancel or manual booking emails only if ticked.
+- **Contact details are a Setting** (`contact`, `core/contact.ts`): address, phone, WhatsApp
+  (digits), email, map query (place or "lat, lng") and social URLs (Instagram, Facebook, TikTok,
+  YouTube, Tripadvisor; empty = hidden). Edited in admin Settings, read per request by the
+  contact section, footer, map iframe (`data-map-q`) and JSON-LD (`geo` only for coordinates,
+  `sameAs` from the socials). Missing fields fall back to `DEFAULT_CONTACT`.
 - Uploads: JPEG/PNG/WebP up to 15 MB (server action body limit 16 MB); HEIC is refused.
   The seed creates photos only if missing, and `media:import` keeps files replaced in the admin.
 - Owner emails link to the booking in the admin via `ADMIN_URL`.
@@ -311,21 +316,34 @@ elements, pointed-oval seed logo.
 
 - Rooms, from the client's brief (`packages/db/src/seed-data.ts`): 1 Dhara (earth), 2 Jala
   (water), 3 Vayu (air), 4 Agni (fire), 5 Soma (moon), 6 Surya (sun), 7 Tara (star). **Vyoma is
-  dropped.** Two 26 m² studios at $95 and five king rooms at $50–$75. Card titles read
-  `[icon] 1 - DHARA`. Tara's keywords are missing, and Tara borrows Vyoma's photos for now.
+  dropped.** Two 26 m² studios at $95 and five king rooms at $50–$75. Room cards read
+  `[icon] DHARA` with the room number under the name (client, Oct 2026: no element word there);
+  the dialog's and booking confirm's eyebrow is the bare element ("Earth"), the dialog title
+  `1 - DHARA`. Tara's keywords are missing, and Tara borrows Vyoma's photos for now.
 - Hero: "Your home on the South Coast. *Naturally.*" ("Naturally." italic bronze), sub-heading
-  "Seven rooms among the palms, just beyond the bustle of Weligama.", handwritten
+  "Seven rooms. Each with a nature of its own." (Oct 2026; was "Seven rooms among the palms…"),
+  handwritten
   "Weligama / Sri Lanka" top right (Mrs Saint Delafield), button `BOOK YOUR STAY →`.
 - Nav: STAY · EXPLORE · ABOUT | logo | GALLERY · CONTACT · Book your stay.
 - Explore: VYONA / FOOD / BEYOND VYONA columns, Stay intro, "In every room" and "A room, and a
   little more": use the client's copy word for word (in `client updates/`). About has no copy yet.
+- Home copy (client, Oct 2026), word for word: Welcome ("A different kind of stay in Weligama.",
+  the "Here, nature isn't a theme…" paragraph in ink, signed "Make yourself at home."), rooms
+  head "Seven rooms. Each with a nature of its own." + the two-studios lede (same line as the
+  hero, as the client asked), statement "Built for lasting memories.", Find us ("Close to
+  Weligama. / A little closer to nature."), food pillar "Fresh · local · delicious".
+- Address: 203/1 Punchideniya, Weligama, Sri Lanka.
 - Prototype only: seven element rooms including Vyoma at placeholder prices $85–$140.
 - Currency: USD by default, LKR toggle at a flat `LKR_PER_USD = 300` (placeholder rate).
 - Prototype booking is a mock (FNV hash of the date). In `apps/web` the calendar is real:
   `/api/calendar` returns each night's state, price and min stay from `packages/core`. Nightly rate
   +20% Dec–Mar, +12% Fri/Sat; 10% service charge; 10% off at 7+ nights; 15-minute hold.
-- About and the Explore pillar pages carry draft or placeholder copy, marked on the page.
-- Contact details, address and social handles are placeholders, marked on the page.
+- **Draft pages are blocked** (client, Oct 2026: "block them for now"): `SHOW_DRAFT_PAGES =
+  false` in `lib/content.ts` makes `/about` and `/explore/[pillar]` 404 and hides every link to
+  them (Our story, the pillar links and images, Discover VYONA). ABOUT in the nav and footer goes
+  to `/#welcome` (`ABOUT_HREF`). `/explore` itself stays. Flip the flag when the copy arrives.
+- Phone, WhatsApp, email and socials are placeholders until the owner saves them in the admin;
+  the contact section's note disappears once the `contact` row exists.
 
 ## Frontend guide checklist (in the prototype and in `apps/web`)
 
@@ -437,7 +455,7 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
 Whether guests may pay at the villa (`payAtVilla`), the PayHere charge currency (USD or LKR),
 official logo, Tara's keywords, whether the Booking.com rate is the nightly rate or includes
 the service charge or a markup, the Beds24 room ids (and a check of blackout against the real
-account), About copy and host photos, Explore subpage copy, real contact
-details and address, high-res photos (beach, food, video), PayHere merchant account, Beds24
+account), About copy and host photos, Explore subpage copy (both pages blocked until then), the
+real phone, email and social links (the owner enters them in admin Settings), high-res photos (beach, food, video), PayHere merchant account, Beds24
 account, SMTP provider, tax and service-charge rules, check-in/out times, cancellation policy.
 Placeholders are marked on the page; nothing blocks on these.

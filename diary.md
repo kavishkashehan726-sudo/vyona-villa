@@ -5,6 +5,40 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-08 — Client adjustments: copy, editable contact details, drafts blocked
+
+### Done
+
+- Home copy from the client: hero sub-heading "Seven rooms. Each with a nature of its own.",
+  the rooms head (same line plus the two-studios lede), "Built for lasting memories.", the new
+  Welcome text (signed "Make yourself at home."), Find us text and the food pillar.
+- Room cards show the room number under the name instead of the element; the dialog and the
+  booking confirm step say "Earth", not "The earth room".
+- Contact details are editable in admin Settings (`contact` Setting row, `core/contact.ts`):
+  address (now 203/1 Punchideniya), phone, WhatsApp, email, map location and five social links.
+  The contact section, footer icons, map and JSON-LD read them per request.
+- About and the three Explore pillar pages are blocked behind `SHOW_DRAFT_PAGES` (404, no
+  links); ABOUT in the nav and footer points at the welcome section.
+
+### Checked
+
+- typecheck, 87 core tests. Dev with curl: new copy present, `/about` and `/explore/food` 404,
+  no links to them, cards numbered 1–7. A `contact` row written by hand showed the new phone,
+  socials in footer and contact, `geo` and `sameAs`, and hid the WhatsApp button when blank.
+
+### Problems hit
+
+- Another project's Postgres held host port 5432, so the dev stack ran with a scratch compose
+  override that drops the postgres/redis host ports (the containers don't need them).
+- Turbopack hung on its first compile under heavy host load; restarting the app fixed it.
+
+### Next
+
+- The owner enters the real phone, email and socials in admin Settings.
+- Switch on indexing once prices are confirmed.
+
+---
+
 ## 2026-10-06 — Room dialog centred
 
 ### Done

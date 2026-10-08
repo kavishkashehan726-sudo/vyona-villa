@@ -6,10 +6,10 @@ import { PageEffects } from '@/components/PageEffects';
 import { Cta } from '@/components/sections/Cta';
 import { PageHero } from '@/components/sections/Hero';
 import { Story } from '@/components/sections/Story';
-import { PILLARS, pillarBySlug } from '@/lib/content';
+import { PILLARS, pillarBySlug, SHOW_DRAFT_PAGES } from '@/lib/content';
 
 export function generateStaticParams() {
-  return PILLARS.map((p) => ({ pillar: p.slug }));
+  return SHOW_DRAFT_PAGES ? PILLARS.map((p) => ({ pillar: p.slug })) : [];
 }
 
 export async function generateMetadata({ params }: PageProps<'/explore/[pillar]'>): Promise<Metadata> {
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps<'/explore/[pillar]'
 
 export default async function PillarPage({ params }: PageProps<'/explore/[pillar]'>) {
   const p = pillarBySlug((await params).pillar);
-  if (!p) notFound();
+  if (!p || !SHOW_DRAFT_PAGES) notFound();
   const others = PILLARS.filter((o) => o.slug !== p.slug);
 
   return (

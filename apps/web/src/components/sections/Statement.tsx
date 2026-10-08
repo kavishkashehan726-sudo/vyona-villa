@@ -12,7 +12,7 @@ export function Statement() {
       </div>
       <div className="statement__card reveal">
         <Mark className="statement__mark" />
-        <h2 className="h2">Built for long mornings.</h2>
+        <h2 className="h2">Built for lasting memories.</h2>
         <p>
           Whitewashed walls, teak floors and wide verandahs, set around a pool that catches the first light through the
           trees. Nothing here is in a hurry, and neither are you.

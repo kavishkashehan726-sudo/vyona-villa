@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
-import { loadSettings, MIN_PASSWORD } from '@vyona/core';
+import { loadContact, loadSettings, MIN_PASSWORD, SOCIAL_LABELS, SOCIALS } from '@vyona/core';
 import { ActionForm, Submit } from '@/components/ActionForm';
 import { requireAdmin } from '@/lib/session';
 import { signOut } from '../../login/actions';
-import { savePassword, saveSettings } from './actions';
+import { saveContact, savePassword, saveSettings } from './actions';
 
 export const metadata: Metadata = { title: 'Settings' };
 
 export default async function SettingsPage() {
   const admin = await requireAdmin();
-  const s = await loadSettings();
+  const [s, c] = await Promise.all([loadSettings(), loadContact()]);
 
   return (
     <>
@@ -71,6 +71,58 @@ export default async function SettingsPage() {
 
         <div className="actions">
           <Submit busy="Saving…">Save settings</Submit>
+        </div>
+      </ActionForm>
+
+      <ActionForm action={saveContact} className="stack">
+        <section className="card">
+          <h2 className="card__title">Contact details on the website</h2>
+          {!c.saved && <p className="hint">The phone, WhatsApp and email below are placeholders until you save this form.</p>}
+          <div className="form-grid">
+            <label className="field form-grid__wide">
+              <span className="field__label">Address</span>
+              <input className="input" name="address" defaultValue={c.address} maxLength={200} required />
+            </label>
+            <label className="field">
+              <span className="field__label">Phone</span>
+              <input className="input" type="tel" name="phone" defaultValue={c.phone} maxLength={20} required />
+              <span className="field__hint">As guests should dial it, with the country code.</span>
+            </label>
+            <label className="field">
+              <span className="field__label">WhatsApp</span>
+              <input className="input" type="tel" name="whatsapp" defaultValue={c.whatsapp && `+${c.whatsapp}`} maxLength={25} />
+              <span className="field__hint">With the country code. Leave it empty to hide the WhatsApp button.</span>
+            </label>
+            <label className="field">
+              <span className="field__label">Email</span>
+              <input className="input" type="email" name="email" defaultValue={c.email} maxLength={120} required />
+            </label>
+            <label className="field">
+              <span className="field__label">Map location</span>
+              <input className="input" name="mapQuery" defaultValue={c.mapQuery} maxLength={200} required />
+              <span className="field__hint">
+                An address, a place name, or exact coordinates like 5.9749, 80.4290 (in Google Maps, right-click the
+                villa and click the numbers to copy them).
+              </span>
+            </label>
+          </div>
+        </section>
+
+        <section className="card">
+          <h2 className="card__title">Social links</h2>
+          <p className="hint">Paste the full link to each profile. Empty ones aren’t shown.</p>
+          <div className="form-grid">
+            {SOCIALS.map((key) => (
+              <label className="field" key={key}>
+                <span className="field__label">{SOCIAL_LABELS[key]}</span>
+                <input className="input" type="url" name={key} defaultValue={c.social[key]} maxLength={300} placeholder="https://" />
+              </label>
+            ))}
+          </div>
+        </section>
+
+        <div className="actions">
+          <Submit busy="Saving…">Save contact details</Submit>
         </div>
       </ActionForm>
 

@@ -62,7 +62,7 @@ export function RoomDialog({ rooms }: { rooms: RoomData[] }) {
           </div>
           <div className="room-dialog__body">
             <Icon name={room.icon as IconName} className="room-card__icon" />
-            <p className="eyebrow">The {room.element} room</p>
+            <p className="eyebrow">{room.element}</p>
             <h2 className="h2" id="room-dialog-title">
               {roomTitle(room)}
             </h2>

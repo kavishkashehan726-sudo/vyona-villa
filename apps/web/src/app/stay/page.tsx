@@ -8,7 +8,7 @@ import { Photo } from '@/components/Photo';
 import { Price } from '@/components/Price';
 import { Cta } from '@/components/sections/Cta';
 import { PageHero } from '@/components/sections/Hero';
-import { EVERY_ROOM } from '@/lib/content';
+import { EVERY_ROOM, SHOW_DRAFT_PAGES } from '@/lib/content';
 import { getRooms, roomSpecs, roomTitle } from '@/lib/site';
 
 export const metadata: Metadata = {
@@ -112,9 +112,11 @@ export default async function StayPage() {
           <p>Swim beneath the palms. Have breakfast in the garden. Find a quiet corner with a book. Stay for another coffee.</p>
           <p>Weligama is just down the road when you want it.</p>
           <p>And when you don&rsquo;t, that&rsquo;s rather the point.</p>
-          <Link className="link-caps" href="/explore/vyona">
-            Discover VYONA <Icon name="arrow" className="i" />
-          </Link>
+          {SHOW_DRAFT_PAGES && (
+            <Link className="link-caps" href="/explore/vyona">
+              Discover VYONA <Icon name="arrow" className="i" />
+            </Link>
+          )}
         </div>
         <div className="more__img">
           <span data-parallax="0.12">

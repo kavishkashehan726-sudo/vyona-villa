@@ -10,7 +10,7 @@ import { RoomDialog } from '@/components/RoomDialog';
 import { Runtime } from '@/components/Runtime';
 import type { BootData } from '@/client/boot';
 import { clientPhotos, getPhotos } from '@/lib/media';
-import { getRooms, getSettings, indexable, jsonScript, lodgingJsonLd, lowestRate, SITE_URL } from '@/lib/site';
+import { getContact, getRooms, getSettings, indexable, jsonScript, lodgingJsonLd, lowestRate, SITE_URL } from '@/lib/site';
 import { cormorant, jost, script } from './fonts';
 import './globals.css';
 import './site.css';
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: '#f1ece3' };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const [rooms, settings, photos] = await Promise.all([getRooms(), getSettings(), getPhotos()]);
+  const [rooms, settings, photos, contact] = await Promise.all([getRooms(), getSettings(), getPhotos(), getContact()]);
   const bootData: BootData = {
     photos: clientPhotos(photos),
     rooms: rooms.map((r) => ({
@@ -75,7 +75,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <main id="main" tabIndex={-1}>
           {children}
         </main>
-        <Footer />
+        <Footer social={contact.social} />
         <BookBar from={lowestRate(rooms)} />
 
         {/* Booking drawer (mobile) / dialog (desktop); client/booking.ts moves the widget in. */}
@@ -106,7 +106,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
           </button>
         </aside>
 
-        <JsonLd data={lodgingJsonLd(rooms, settings)} />
+        <JsonLd data={lodgingJsonLd(rooms, settings, contact)} />
         <script type="application/json" id="vy-boot" dangerouslySetInnerHTML={{ __html: jsonScript(bootData) }} />
         <Runtime />
       </body>

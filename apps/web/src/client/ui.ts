@@ -47,10 +47,11 @@ export function initMap(box: HTMLElement) {
       if (!e?.isIntersecting || !navigator.onLine) return;
       io.disconnect();
       const f = document.createElement('iframe');
-      f.title = 'Map of Weligama, Sri Lanka';
+      const q = box.dataset.mapQ || 'Weligama, Sri Lanka';
+      f.title = `Map: ${q}`;
       f.loading = 'lazy';
       f.referrerPolicy = 'no-referrer-when-downgrade';
-      f.src = 'https://www.google.com/maps?q=Weligama,+Sri+Lanka&z=14&output=embed';
+      f.src = `https://www.google.com/maps?q=${encodeURIComponent(q)}&z=15&output=embed`;
       box.append(f);
     },
     { rootMargin: '400px 0px' },

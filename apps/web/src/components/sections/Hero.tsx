@@ -1,6 +1,6 @@
 // Cinematic hero (frontend guide §1): Ken Burns cross-fade over the client's
 // photos, palm shadows and lines at their own parallax depths, the headline
-// rising out of line masks. Copy from the client's "Homepage main phrase".
+// rising out of line masks. Copy from the client's "Homepage main phrase" and brief.
 // When footage arrives, swap the slides for <video autoplay muted loop playsinline>.
 
 import Link from 'next/link';
@@ -43,9 +43,9 @@ export function Hero() {
         </h1>
         <hr className="rule rule--light" />
         <p className="hero__lede">
-          Seven rooms among the palms,
+          Seven rooms.
           <br />
-          just beyond the bustle of Weligama.
+          Each with a nature of its own.
         </p>
         <Link className="btn btn--glass magnetic" href="/book" data-open-booking data-cursor="Book">
           Book your stay <Icon name="arrow" className="i" />

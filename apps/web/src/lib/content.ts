@@ -4,6 +4,14 @@
 
 import type { IconName } from '@vyona/ui';
 
+/**
+ * About and the three Explore pillar pages carry draft copy. Until the client's copy arrives
+ * (client, Oct 2026) they answer 404 and nothing links to them; ABOUT in the nav and footer
+ * points at the home page's welcome section instead.
+ */
+export const SHOW_DRAFT_PAGES = false;
+export const ABOUT_HREF = SHOW_DRAFT_PAGES ? '/about' : '/#welcome';
+
 export type StoryBlock = { photo: string; alt: string; eyebrow: string; title: string; text: string[] };
 
 export type Pillar = {
@@ -60,8 +68,8 @@ export const PILLARS: Pillar[] = [
   {
     slug: 'food',
     title: 'Food',
-    tag: 'Fresh. Local. Simply good.',
-    body: 'Food made here, with ingredients chosen close to home whenever we can — from the sea, the farm and the markets around us.',
+    tag: 'Fresh · local · delicious',
+    body: 'Food always homemade, with ingredients sourced daily close to home — from the sea, the local farms and markets around us.',
     link: 'Come to the table',
     photo: 'breakfast-view',
     alt: 'Breakfast of fruit, eggs and coffee on a verandah overlooking paddy fields',

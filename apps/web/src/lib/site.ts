@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { prisma } from '@vyona/db';
-import { loadSettings } from '@vyona/core';
+import { loadContact, loadSettings, mapCoords, type ContactDetails } from '@vyona/core';
 import type { RoomData } from './rooms';
 
 export { lowestRate, roomSpecs, roomTitle, type RoomData } from './rooms';
@@ -10,19 +10,6 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:30
 /** Search engines may index the site: SITE_INDEXABLE=1, set once the client confirms real prices. */
 export const indexable = () => process.env.SITE_INDEXABLE === '1';
 
-// PLACEHOLDERS until the client sends the real details (see CLAUDE.md).
-export const CONTACT = {
-  street: 'Placeholder Road',
-  town: 'Weligama 81700',
-  country: 'Sri Lanka',
-  phone: '+94 77 000 0000',
-  phoneHref: 'tel:+94770000000',
-  email: 'stay@vyona.lk',
-  instagram: '@vyona.weligama',
-  instagramHref: '#',
-  whatsapp: 'https://wa.me/94770000000',
-  geo: { lat: 5.9749, lng: 80.429 },
-};
 
 export const getRooms = cache(
   async (): Promise<RoomData[]> =>
@@ -48,10 +35,19 @@ export const getRooms = cache(
 
 export const getSettings = cache(() => loadSettings());
 
+/** Address, phone, email, map and social links, as the owner set them in the admin. */
+export const getContact = cache(() => loadContact());
+
 /** Inlines JSON in a <script> without letting "</script>" in the data close it. */
 export const jsonScript = (data: unknown) => JSON.stringify(data).replace(/</g, '\\u003c');
 
-export function lodgingJsonLd(rooms: RoomData[], settings: { checkInTime: string; checkOutTime: string }) {
+export function lodgingJsonLd(
+  rooms: RoomData[],
+  settings: { checkInTime: string; checkOutTime: string },
+  contact: ContactDetails,
+) {
+  const geo = mapCoords(contact.mapQuery);
+  const sameAs = Object.values(contact.social).filter(Boolean);
   return {
     '@context': 'https://schema.org',
     '@type': 'LodgingBusiness',
@@ -62,16 +58,17 @@ export function lodgingJsonLd(rooms: RoomData[], settings: { checkInTime: string
     slogan: 'Your home on the South Coast. Naturally.',
     numberOfRooms: rooms.length,
     priceRange: '$$',
-    telephone: CONTACT.phone,
-    email: CONTACT.email,
+    telephone: contact.phone,
+    email: contact.email,
     address: {
       '@type': 'PostalAddress',
-      streetAddress: CONTACT.street,
+      streetAddress: contact.address,
       addressLocality: 'Weligama',
       addressRegion: 'Southern Province',
       addressCountry: 'LK',
     },
-    geo: { '@type': 'GeoCoordinates', latitude: CONTACT.geo.lat, longitude: CONTACT.geo.lng },
+    ...(geo && { geo: { '@type': 'GeoCoordinates', latitude: geo.lat, longitude: geo.lng } }),
+    ...(sameAs.length > 0 && { sameAs }),
     amenityFeature: ['Outdoor swimming pool', 'Breakfast', 'Free Wi-Fi', 'Air conditioning'].map((name) => ({
       '@type': 'LocationFeatureSpecification',
       name,

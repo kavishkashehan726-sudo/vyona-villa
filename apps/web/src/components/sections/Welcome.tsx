@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Icon, Palm } from '@vyona/ui';
+import { SHOW_DRAFT_PAGES } from '@/lib/content';
 import { Photo } from '../Photo';
 
 export function Welcome() {
@@ -14,17 +15,24 @@ export function Welcome() {
         </h2>
         <hr className="rule" />
         <p>
-          Set among palms and tropical greenery, just beyond the bustle of Weligama, VYONA is a seven-room boutique
-          villa made for slower days and easy living.
+          Set among palms and tropical greenery, VYONA is a seven-room hideaway made for easy days, good food and time
+          spent outdoors.
+        </p>
+        <p className="welcome__em">
+          Here, nature isn&rsquo;t a theme. It&rsquo;s simply who we are. Sunlight through the windows, birds in the
+          garden, a breeze through the palms and the paddy just beyond.
         </p>
         <p>
-          Here, nature isn&rsquo;t a theme. It&rsquo;s simply part of the place: sunlight through the windows, birds
-          in the garden, the breeze in the palms and the ocean just down the road.
+          The beach is close, but there&rsquo;s plenty to stay for&nbsp;&mdash; a swim in the pool, breakfast
+          overlooking the paddy, a quiet corner in the garden, or simply nowhere you need to be.
         </p>
-        <Link className="link-arrow" href="/about">
-          <span className="link-arrow__line" aria-hidden="true" />
-          Our story <Icon name="arrow" className="i" />
-        </Link>
+        <p className="welcome__sign">Make yourself at home.</p>
+        {SHOW_DRAFT_PAGES && (
+          <Link className="link-arrow" href="/about">
+            <span className="link-arrow__line" aria-hidden="true" />
+            Our story <Icon name="arrow" className="i" />
+          </Link>
+        )}
       </div>
       <figure className="welcome__photo unveil">
         <Photo k="door-statue" alt="A carved timber door beside a stone statue and a potted palm at VYONA" />

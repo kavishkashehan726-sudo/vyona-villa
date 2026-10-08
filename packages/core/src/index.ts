@@ -4,6 +4,7 @@ export * from './availability';
 export * from './beds24';
 export * from './booking';
 export * from './channel';
+export * from './contact';
 export * from './dates';
 export * from './nights';
 export * from './payhere';

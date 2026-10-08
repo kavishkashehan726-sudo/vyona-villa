@@ -306,7 +306,7 @@ function stepConfirm() {
     <div class="bk__review">
       ${p ? `<img src="${p.src}" alt="" width="${p.w}" height="${p.h}" style="object-fit:cover">` : '<span></span>'}
       <div>
-        <p class="eyebrow" style="margin-bottom:.3rem">The ${esc(room.element)} room</p>
+        <p class="eyebrow" style="margin-bottom:.3rem">${esc(room.element)}</p>
         <h3 class="h3">${esc(room.name)}</h3>
         <p style="margin:.4rem 0 0">${fmt(S.start!)} → ${fmt(S.end!)} · ${plural(S.guests, 'guest')}<br>${esc(S.guest.name)} · ${esc(S.guest.email)}</p>
       </div>

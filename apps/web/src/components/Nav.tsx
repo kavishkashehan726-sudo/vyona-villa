@@ -9,12 +9,13 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Mark } from '@vyona/ui';
 import { lockScroll } from '@/client/ui';
+import { ABOUT_HREF } from '@/lib/content';
 import { SHOW_VILLA_3D } from '@/lib/villa';
 
 const LEFT = [
   ['/stay', 'Stay'],
   ['/explore', 'Explore'],
-  ['/about', 'About'],
+  [ABOUT_HREF, 'About'],
 ] as const;
 const RIGHT = [
   ['/gallery', 'Gallery'],

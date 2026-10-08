@@ -1,7 +1,16 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { changePassword, DEFAULT_SETTINGS, MIN_PASSWORD, type BookingSettings } from '@vyona/core';
+import {
+  changePassword,
+  CONTACT_KEY,
+  DEFAULT_SETTINGS,
+  MIN_PASSWORD,
+  SOCIAL_LABELS,
+  SOCIALS,
+  type BookingSettings,
+  type ContactDetails,
+} from '@vyona/core';
 import { prisma } from '@vyona/db';
 import { attempt, fail, ok, text, type Result } from '@/lib/actions';
 import { getToken, requireAdmin } from '@/lib/session';
@@ -45,6 +54,34 @@ export async function saveSettings(_prev: Result, fd: FormData): Promise<Result>
     await syncRates();
     revalidatePath('/', 'layout');
     return ok('Saved. The website uses the new settings straight away.');
+  });
+}
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE = /^\+?[\d\s()-]{7,20}$/;
+
+export async function saveContact(_prev: Result, fd: FormData): Promise<Result> {
+  await requireAdmin();
+  const address = text(fd, 'address', 200);
+  const phone = text(fd, 'phone', 20);
+  const whatsapp = text(fd, 'whatsapp', 25).replace(/\D/g, '');
+  const email = text(fd, 'email', 120);
+  const mapQuery = text(fd, 'mapQuery', 200);
+  if (!address) return fail('Enter the address.');
+  if (!PHONE.test(phone)) return fail('Enter the phone number with digits only, like +94 77 123 4567.');
+  if (whatsapp && (whatsapp.length < 8 || whatsapp.length > 15)) return fail('Enter the WhatsApp number with its country code, like +94 77 123 4567.');
+  if (!EMAIL.test(email)) return fail('Enter an email address, like stay@example.com.');
+  if (!mapQuery) return fail('Enter what the map should show: the address, a place name or coordinates.');
+  const social = {} as ContactDetails['social'];
+  for (const key of SOCIALS) {
+    const url = text(fd, key, 300);
+    if (url && !/^https:\/\/[^\s]+\.[^\s]+$/.test(url)) return fail(`Paste the full ${SOCIAL_LABELS[key]} link, starting with https://.`);
+    social[key] = url;
+  }
+  const value: ContactDetails = { address, phone, whatsapp, email, mapQuery, social };
+  return attempt(async () => {
+    await prisma.setting.upsert({ where: { key: CONTACT_KEY }, create: { key: CONTACT_KEY, value }, update: { value } });
+    return ok('Saved. The website shows the new details straight away.');
   });
 }
 
