@@ -463,6 +463,12 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
 - The client's photos are WhatsApp-compressed to ~1200px; hero images can't go sharper until the
   originals arrive.
 - Playwright MCP can only write inside the project, hence `.playwright-mcp/` (ignored).
+- **The Namecheap registrant contact must stay verified.** On 2026-10-08 Namecheap had swapped
+  the nameservers for `failed-whois-verification.namecheap.com` (site and admin unreachable,
+  ERR_QUIC_PROTOCOL_ERROR in browsers that remembered Cloudflare's HTTP/3); the owner verified
+  the email the same day and the registry went back to Cloudflare. Check the registry, not the
+  local resolver, which kept a stale answer: `dig +noall +authority NS vyonaweligama.com
+  @a.gtld-servers.net`.
 - `scp` takes `-P` for the port, `ssh` takes `-p`. Sharing one options array between them makes
   scp read the port number as a filename.
 - Base64 costs about a third on the wire even after gzip: the same page is 2.82 MB compressed
@@ -472,15 +478,6 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
 
 ## Remind the owner
 
-- **Domain suspended (found 2026-10-08):** Namecheap moved vyonaweligama.com's nameservers to
-  `failed-whois-verification.namecheap.com` because the registrant contact was never verified,
-  so the whole site (apex and admin) is unreachable although the VPS is healthy. The owner
-  verifies the registrant email in Namecheap, then checks the nameservers are Cloudflare's again.
-  Check at the registry, not the local resolver (which kept a stale Cloudflare answer on
-  2026-10-08): `dig +noall +authority NS vyonaweligama.com @a.gtld-servers.net`. Until it shows
-  Cloudflare's nameservers, browsers get Namecheap's parking IP; one that remembers Cloudflare's
-  HTTP/3 `alt-svc` then fails with ERR_QUIC_PROTOCOL_ERROR. The server and Cloudflare are fine
-  (`curl --resolve` to a Cloudflare IP returns 200).
 - **Search engines (asked 2026-10-06):** the live site is still `noindex` with `Disallow: /`.
   Bring it up at the start of each session until it's done: once the client confirms real
   prices, set `SITE_INDEXABLE=1` in the server's `.env` and run `scripts/deploy-app.sh --restart`.

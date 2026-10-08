@@ -5,6 +5,21 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-08 — Domain back
+
+### Done
+
+- The owner verified the registrant email; the .com registry lists Cloudflare's nameservers
+  again. The Namecheap reminder is out of CLAUDE.md (a gotcha remains).
+
+### Checked
+
+- Through public DNS: apex 200, `/api/health` 200 on web and admin, `www` 301 to the apex, and
+  the page serves the official logo (`6663dbf`). 8.8.8.8 had the new nameservers at once; 1.1.1.1
+  still answered from cache for a while.
+
+---
+
 ## 2026-10-08 — Washed-out Beyond card, preview notice kept coming back
 
 ### Done
