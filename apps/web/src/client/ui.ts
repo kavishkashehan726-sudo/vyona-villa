@@ -42,6 +42,19 @@ export function initBadge() {
   });
 }
 
+/**
+ * Brings a section into view under the fixed nav. When the section fits on screen, a strip of
+ * what's above it stays visible (up to 80px), so it reads as part of the page rather than a jump.
+ */
+export function scrollToSection(el: HTMLElement, smooth: boolean) {
+  const nav = $('.nav')?.offsetHeight ?? 0;
+  const box = el.getBoundingClientRect();
+  const content = box.height - parseFloat(getComputedStyle(el).paddingBottom);
+  const gap = Math.min(80, Math.max(16, window.innerHeight - nav - content));
+  const top = Math.max(0, box.top + window.scrollY - nav - gap);
+  window.scrollTo({ top, behavior: smooth ? 'smooth' : 'instant' });
+}
+
 // Google Maps is the only third-party request, and it only loads when the
 // section is near the viewport and the browser is online.
 export function initMap(box: HTMLElement) {

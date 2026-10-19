@@ -303,8 +303,10 @@ elements, pointed-oval seed logo.
   replaces the calendar section with a Booking.com button, redirects `/book` and makes
   `POST /api/bookings` answer 409. `externalBookingUrl()` returns null (book here) unless it's off
   and a valid booking.com https link is set; the admin refuses off without a link.
-- The contact page scrolls to the details on arrival (`<PageEffects scrollTo="contact">`), only
-  from the top of the page and without a hash, instantly under reduced motion.
+- The contact page scrolls to the details on arrival (`<PageEffects scrollTo="contact">`,
+  `scrollToSection` in `client/ui.ts`), only from the top of the page and without a hash,
+  instantly under reduced motion. It stops with an 80px strip of the hero under the nav (the
+  client's screenshot, Oct 2026), less when the section doesn't fit the screen.
 - Uploads: JPEG/PNG/WebP up to 15 MB (server action body limit 16 MB); HEIC is refused.
   The seed creates photos only if missing, and `media:import` keeps files replaced in the admin.
 - Owner emails link to the booking in the admin via `ADMIN_URL`.

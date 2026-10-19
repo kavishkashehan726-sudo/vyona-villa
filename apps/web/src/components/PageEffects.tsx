@@ -11,7 +11,7 @@ import { getCap } from '@/client/capability';
 import { initGallery } from '@/client/gallery';
 import { initHero } from '@/client/hero';
 import { initMotion } from '@/client/motion';
-import { initMap } from '@/client/ui';
+import { initMap, scrollToSection } from '@/client/ui';
 
 export function PageEffects({ scrollTo }: { scrollTo?: string } = {}) {
   useEffect(() => {
@@ -40,10 +40,7 @@ export function PageEffects({ scrollTo }: { scrollTo?: string } = {}) {
     let timer = 0;
     if (target && window.scrollY < 10 && !location.hash) {
       timer = window.setTimeout(() => {
-        if (window.scrollY >= 10) return;
-        const nav = document.querySelector<HTMLElement>('.nav')?.offsetHeight ?? 0;
-        const top = target.getBoundingClientRect().top + window.scrollY - nav;
-        window.scrollTo({ top, behavior: cap.reduced ? 'instant' : 'smooth' });
+        if (window.scrollY < 10) scrollToSection(target, !cap.reduced);
       }, 350);
     }
 
