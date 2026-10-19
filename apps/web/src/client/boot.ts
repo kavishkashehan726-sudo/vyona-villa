@@ -24,6 +24,8 @@ export type BootData = {
     payAtVilla: boolean;
     chargeCurrency: 'USD' | 'LKR';
   };
+  /** The Booking.com page every Book button opens while online booking is off; null books here. */
+  bookingUrl: string | null;
 };
 
 let data: BootData | null = null;
@@ -45,6 +47,7 @@ export function boot(): BootData {
         payAtVilla: false,
         chargeCurrency: 'USD',
       },
+      bookingUrl: null,
     };
   }
   return data;

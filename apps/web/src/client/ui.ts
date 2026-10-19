@@ -55,7 +55,8 @@ export function initMap(box: HTMLElement) {
       f.title = `Map: ${q}`;
       f.loading = 'lazy';
       f.referrerPolicy = 'no-referrer-when-downgrade';
-      f.src = `https://www.google.com/maps?q=${encodeURIComponent(q)}&z=15&output=embed`;
+      // The server works out the URL from the owner's Google Maps link or map location.
+      f.src = box.dataset.mapSrc || `https://www.google.com/maps?q=${encodeURIComponent(q)}&z=15&output=embed`;
       box.append(f);
     },
     { rootMargin: '400px 0px' },

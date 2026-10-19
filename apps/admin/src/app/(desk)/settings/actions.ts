@@ -5,7 +5,10 @@ import {
   changePassword,
   CONTACT_KEY,
   DEFAULT_SETTINGS,
+  followMapLink,
   MIN_PASSWORD,
+  normaliseBookingComUrl,
+  parseMapLink,
   SOCIAL_LABELS,
   SOCIALS,
   type BookingSettings,
@@ -32,6 +35,11 @@ export async function saveSettings(_prev: Result, fd: FormData): Promise<Result>
     const checkOutTime = text(fd, 'checkOutTime', 5);
     if (!TIME.test(checkInTime) || !TIME.test(checkOutTime)) return fail('Enter check-in and check-out as times, like 14:00.');
     const currency = text(fd, 'chargeCurrency', 3);
+    const onlineBooking = fd.get('onlineBooking') === 'on';
+    const bookingComInput = text(fd, 'bookingComUrl', 500);
+    const bookingComUrl = bookingComInput ? normaliseBookingComUrl(bookingComInput) : '';
+    if (bookingComUrl === null) return fail('Paste the link to the villa’s page on Booking.com, like https://www.booking.com/hotel/lk/….');
+    if (!onlineBooking && !bookingComUrl) return fail('Paste your Booking.com link to send guests there, or keep online booking on.');
     next = {
       serviceChargePercent: whole(fd, 'serviceChargePercent', 0, 30, 'Service charge'),
       longStayNights: whole(fd, 'longStayNights', 2, 60, 'Long stay'),
@@ -42,6 +50,8 @@ export async function saveSettings(_prev: Result, fd: FormData): Promise<Result>
       checkInTime,
       checkOutTime,
       payAtVilla: fd.get('payAtVilla') === 'on',
+      onlineBooking,
+      bookingComUrl,
     };
   } catch (err) {
     return fail((err as Error).message);
@@ -67,20 +77,37 @@ export async function saveContact(_prev: Result, fd: FormData): Promise<Result> 
   const whatsapp = text(fd, 'whatsapp', 25).replace(/\D/g, '');
   const email = text(fd, 'email', 120);
   const mapQuery = text(fd, 'mapQuery', 200);
+  const mapInput = text(fd, 'mapLink', 3000);
   if (!address) return fail('Enter the address.');
   if (!PHONE.test(phone)) return fail('Enter the phone number with digits only, like +94 77 123 4567.');
   if (whatsapp && (whatsapp.length < 8 || whatsapp.length > 15)) return fail('Enter the WhatsApp number with its country code, like +94 77 123 4567.');
   if (!EMAIL.test(email)) return fail('Enter an email address, like stay@example.com.');
   if (!mapQuery) return fail('Enter what the map should show: the address, a place name or coordinates.');
+  const map = mapInput ? parseMapLink(mapInput) : null;
+  if (mapInput && !map) return fail('Paste a link from Google Maps (Share → Copy link), or its embed code (Share → Embed a map).');
+  let mapLink = '';
+  let mapEmbed = '';
+  if (map?.kind === 'embed') mapEmbed = map.embed;
+  else if (map?.kind === 'place') ({ link: mapLink, embed: mapEmbed } = map);
+  else if (map?.kind === 'short') {
+    // A share link says where it points only once followed; the address still opens it if Google doesn't answer.
+    mapLink = map.link;
+    const full = await followMapLink(map.link);
+    const place = full ? parseMapLink(full) : null;
+    if (place?.kind === 'place') mapEmbed = place.embed;
+  }
   const social = {} as ContactDetails['social'];
   for (const key of SOCIALS) {
     const url = text(fd, key, 300);
     if (url && !/^https:\/\/[^\s]+\.[^\s]+$/.test(url)) return fail(`Paste the full ${SOCIAL_LABELS[key]} link, starting with https://.`);
     social[key] = url;
   }
-  const value: ContactDetails = { address, phone, whatsapp, email, mapQuery, social };
+  const value: ContactDetails = { address, phone, whatsapp, email, mapQuery, mapLink, mapEmbed, social };
   return attempt(async () => {
     await prisma.setting.upsert({ where: { key: CONTACT_KEY }, create: { key: CONTACT_KEY, value }, update: { value } });
+    if (map && !mapEmbed) {
+      return ok('Saved. Google didn’t say where that link points, so the map shows the map location; the address still opens your link.');
+    }
     return ok('Saved. The website shows the new details straight away.');
   });
 }

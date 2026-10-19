@@ -1,4 +1,4 @@
-import { holdRoom } from '@vyona/core';
+import { externalBookingUrl, holdRoom, loadSettings } from '@vyona/core';
 import { prisma } from '@vyona/db';
 import { bookingFailure, canHold, clientIp, countHold, fail, json, parseHold } from '@/lib/booking';
 
@@ -8,6 +8,9 @@ import { bookingFailure, canHold, clientIp, countHold, fail, json, parseHold } f
 // to pay for or release this hold, so it is never shown on a page.
 
 export async function POST(req: Request) {
+  if (externalBookingUrl(await loadSettings())) {
+    return fail('BOOKING_OFF', 'We take bookings through Booking.com at the moment.', 409);
+  }
   const ip = clientIp(req);
   if (!canHold(ip)) {
     return fail('RATE_LIMITED', 'Too many holds from this connection. Try again in 15 minutes, or message us to book.', 429);

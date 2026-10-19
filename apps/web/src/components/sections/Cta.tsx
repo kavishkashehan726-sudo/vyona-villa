@@ -1,8 +1,11 @@
 import Link from 'next/link';
+import { externalBookingUrl } from '@vyona/core';
 import { Icon, Mark, Palm } from '@vyona/ui';
+import { getSettings } from '@/lib/site';
 import { Photo } from '../Photo';
 
-export function Cta() {
+export async function Cta() {
+  const out = externalBookingUrl(await getSettings());
   return (
     <section className="cta" aria-labelledby="cta-title">
       <Palm className="cta__palm" />
@@ -11,9 +14,19 @@ export function Cta() {
           Your stay at VYONA
         </h2>
         <p>
-          Check availability and book your stay directly
-          <br />
-          for the best rates.
+          {out ? (
+            <>
+              Check availability and book your stay
+              <br />
+              on Booking.com.
+            </>
+          ) : (
+            <>
+              Check availability and book your stay directly
+              <br />
+              for the best rates.
+            </>
+          )}
         </p>
         <Link className="btn btn--olive magnetic" href="/book" data-open-booking data-cursor="Book">
           Book now <Icon name="arrow" className="i" />

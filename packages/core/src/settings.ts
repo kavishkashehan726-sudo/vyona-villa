@@ -12,6 +12,10 @@ export type BookingSettings = PricingSettings & {
   checkOutTime: string;
   /** Lets guests confirm without paying online. Off: every booking goes through PayHere. */
   payAtVilla: boolean;
+  /** Guests book and pay on this website. Off: every Book button goes to `bookingComUrl`. */
+  onlineBooking: boolean;
+  /** The villa's Booking.com page, where guests book while online booking is off. */
+  bookingComUrl: string;
 };
 
 export const DEFAULT_SETTINGS: BookingSettings = {
@@ -24,7 +28,30 @@ export const DEFAULT_SETTINGS: BookingSettings = {
   checkInTime: '14:00',
   checkOutTime: '11:00',
   payAtVilla: false,
+  onlineBooking: true,
+  bookingComUrl: '',
 };
+
+/** "booking.com/hotel/…" or a full https link → the https URL, or null if it isn't a Booking.com page. */
+export function normaliseBookingComUrl(input: string): string | null {
+  const raw = input.trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+    const host = url.hostname.toLowerCase();
+    if (host !== 'booking.com' && !host.endsWith('.booking.com')) return null;
+    url.protocol = 'https:';
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+
+/** Where Book buttons send guests instead of the website's own booking, or null to book here. */
+export function externalBookingUrl(s: Pick<BookingSettings, 'onlineBooking' | 'bookingComUrl'>): string | null {
+  if (s.onlineBooking) return null;
+  return normaliseBookingComUrl(s.bookingComUrl);
+}
 
 type Db = Pick<typeof prisma, 'setting' | 'rateRule'>;
 

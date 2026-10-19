@@ -71,4 +71,6 @@ export const SETTINGS: Record<string, unknown> = {
   checkInTime: '14:00', // placeholder
   checkOutTime: '11:00', // placeholder
   payAtVilla: false, // client to decide whether guests may pay on arrival
+  onlineBooking: true, // off sends every Book button to bookingComUrl
+  bookingComUrl: '',
 };
