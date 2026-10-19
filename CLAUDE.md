@@ -288,10 +288,23 @@ elements, pointed-oval seed logo.
   errors: a save never fails because Redis is down, and the fallback sync catches up.
 - A move doesn't email the guest; a cancel or manual booking emails only if ticked.
 - **Contact details are a Setting** (`contact`, `core/contact.ts`): address, phone, WhatsApp
-  (digits), email, map query (place or "lat, lng") and social URLs (Instagram, Facebook, TikTok,
-  YouTube, Tripadvisor; empty = hidden). Edited in admin Settings, read per request by the
-  contact section, footer, map iframe (`data-map-q`) and JSON-LD (`geo` only for coordinates,
-  `sameAs` from the socials). Missing fields fall back to `DEFAULT_CONTACT`.
+  (digits), email, map query (place or "lat, lng"), Google Maps link and social URLs (Instagram,
+  Facebook, TikTok, YouTube, Tripadvisor; empty = hidden). Edited in admin Settings, read per
+  request by the contact section, footer, map iframe (`data-map-src`) and JSON-LD (`geo` only for
+  coordinates, `sameAs` from the socials). Missing fields fall back to `DEFAULT_CONTACT`.
+- **Google Maps link** (`parseMapLink`): a share link, the address-bar URL, or the embed code or
+  its src. On save the admin follows a `maps.app.goo.gl` link (`followMapLink`, through Google's
+  cookie page) and stores `mapEmbed`, built from the pin (`!3d…!4d…`), the search or the place
+  name; an embed URL is stored as is. The map uses `mapEmbed`, else the map query; the address on
+  the contact page opens `mapLink` (else a Maps search).
+- **Booking mode** (`onlineBooking`, `bookingComUrl` settings; admin Settings → How guests book):
+  off sends every `[data-open-booking]` button to the Booking.com page in a new tab
+  (`client/booking.ts` instead of the drawer; `pointBookLinks` rewrites the hrefs per page),
+  replaces the calendar section with a Booking.com button, redirects `/book` and makes
+  `POST /api/bookings` answer 409. `externalBookingUrl()` returns null (book here) unless it's off
+  and a valid booking.com https link is set; the admin refuses off without a link.
+- The contact page scrolls to the details on arrival (`<PageEffects scrollTo="contact">`), only
+  from the top of the page and without a hash, instantly under reduced motion.
 - Uploads: JPEG/PNG/WebP up to 15 MB (server action body limit 16 MB); HEIC is refused.
   The seed creates photos only if missing, and `media:import` keeps files replaced in the admin.
 - Owner emails link to the booking in the admin via `ADMIN_URL`.

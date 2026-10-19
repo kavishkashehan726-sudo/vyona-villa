@@ -16,7 +16,7 @@ export default function ContactPage() {
       <PageHero photo="hero-house" eyebrow="Contact" lines={['Find us', 'among the palms.']} />
       <Contact />
       <Cta />
-      <PageEffects />
+      <PageEffects scrollTo="contact" />
     </>
   );
 }

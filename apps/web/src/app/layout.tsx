@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
-import { PAYHERE_LIVE_URL, payhereConfig } from '@vyona/core';
+import { externalBookingUrl, PAYHERE_LIVE_URL, payhereConfig } from '@vyona/core';
 import { Icon } from '@vyona/ui';
 import { BookBar } from '@/components/BookBar';
 import { Footer } from '@/components/Footer';
@@ -45,10 +45,14 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       photo: r.photos[0] ?? '',
     })),
     settings,
+    bookingUrl: externalBookingUrl(settings),
   };
-  // What the preview notice says about card payment, by the gateway this server would use.
+  // What the preview notice says about card payment, by the gateway this server would use
+  // (nothing while guests book on Booking.com).
   const payhere = payhereConfig();
-  const payNote = !payhere
+  const payNote = bootData.bookingUrl
+    ? ''
+    : !payhere
     ? ' Online payment isn’t switched on yet.'
     : payhere.checkoutUrl === PAYHERE_LIVE_URL
       ? ''

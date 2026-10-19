@@ -24,6 +24,33 @@ export default async function SettingsPage() {
 
       <ActionForm action={saveSettings} className="stack">
         <section className="card">
+          <h2 className="card__title">How guests book</h2>
+          <div className="form-grid">
+            <label className="field form-grid__wide">
+              <span className="field__label">Booking.com page</span>
+              <input
+                className="input"
+                type="url"
+                name="bookingComUrl"
+                defaultValue={s.bookingComUrl}
+                maxLength={500}
+                placeholder="https://www.booking.com/hotel/lk/…"
+              />
+              <span className="field__hint">The villa’s page on Booking.com. Needed when online booking is off.</span>
+            </label>
+          </div>
+          <label className="check">
+            <input type="checkbox" name="onlineBooking" defaultChecked={s.onlineBooking} />
+            <span>
+              Take bookings and payments on the website
+              <span className="field__hint">
+                Guests choose their dates and pay here. Off sends every Book button to your Booking.com page instead.
+              </span>
+            </span>
+          </label>
+        </section>
+
+        <section className="card">
           <h2 className="card__title">Charges</h2>
           <div className="form-grid">
             <Num name="serviceChargePercent" label="Service charge" value={s.serviceChargePercent} unit="%" hint="Added to every stay." />
@@ -102,7 +129,21 @@ export default async function SettingsPage() {
               <input className="input" name="mapQuery" defaultValue={c.mapQuery} maxLength={200} required />
               <span className="field__hint">
                 An address, a place name, or exact coordinates like 5.9749, 80.4290 (in Google Maps, right-click the
-                villa and click the numbers to copy them).
+                villa and click the numbers to copy them). The map shows this when there’s no Google Maps link.
+              </span>
+            </label>
+            <label className="field form-grid__wide">
+              <span className="field__label">Google Maps link</span>
+              <input
+                className="input"
+                name="mapLink"
+                defaultValue={c.mapLink || c.mapEmbed}
+                maxLength={3000}
+                placeholder="https://maps.app.goo.gl/…"
+              />
+              <span className="field__hint">
+                In Google Maps, open the villa, click Share and copy the link (or paste the code from Embed a map). The
+                map on the contact page shows that spot, and the address opens it.
               </span>
             </label>
           </div>

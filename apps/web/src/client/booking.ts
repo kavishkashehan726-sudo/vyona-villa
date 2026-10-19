@@ -716,10 +716,44 @@ function initDrawer() {
   });
 }
 
+/* ------------------------------------------------------------- booking.com */
+
+let external = false;
+
+// While online booking is off, every Book button opens the villa's Booking.com page in a new tab
+// instead of the drawer. Links also get the real address, for hover, middle-click and "Copy link".
+export function pointBookLinks(scope: ParentNode = document) {
+  const url = boot().bookingUrl;
+  if (!url) return;
+  $$<HTMLAnchorElement>('a[data-open-booking]', scope).forEach((a) => {
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+  });
+}
+
+function initExternal(url: string) {
+  if (external) return;
+  external = true;
+  // Capture phase, so a <Link data-open-booking> doesn't navigate to /book first.
+  document.addEventListener(
+    'click',
+    (e) => {
+      if (!(e.target as Element).closest('[data-open-booking]')) return;
+      e.preventDefault();
+      window.open(url, '_blank', 'noopener');
+    },
+    true,
+  );
+  pointBookLinks();
+}
+
 /* --------------------------------------------------------------------- api */
 
 export function initBooking() {
   if (root) return;
+  const url = boot().bookingUrl;
+  if (url) return initExternal(url);
   const list = rooms();
   if (!list.length) return;
   TODAY = today();

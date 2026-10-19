@@ -1,7 +1,7 @@
 // Contact details (set by the owner in the admin's settings) and the lazy
 // Google Map, the only third-party request on the site. Copy is the client's.
 
-import { phoneHref, SOCIAL_LABELS, SOCIALS, whatsappHref } from '@vyona/core';
+import { mapEmbedSrc, mapsHref, phoneHref, SOCIAL_LABELS, SOCIALS, whatsappHref } from '@vyona/core';
 import { Icon } from '@vyona/ui';
 import { getContact } from '@/lib/site';
 import { SOCIAL_ICON, socialText } from '@/lib/social';
@@ -28,7 +28,9 @@ export async function Contact({ headingLevel = 2 }: { headingLevel?: 1 | 2 }) {
         <ul className="contact__list">
           <li>
             <Icon name="pin" className="i" />
-            <span>{c.address}</span>
+            <a href={mapsHref(c)} target="_blank" rel="noopener" aria-label={`${c.address} (opens Google Maps)`}>
+              {c.address}
+            </a>
           </li>
           <li>
             <Icon name="phone" className="i" />
@@ -54,7 +56,7 @@ export async function Contact({ headingLevel = 2 }: { headingLevel?: 1 | 2 }) {
         )}
         {!c.saved && <p className="proto-note">Phone, WhatsApp and email are placeholders.</p>}
       </div>
-      <div className="contact__map" data-map data-map-q={c.mapQuery}>
+      <div className="contact__map" data-map data-map-q={c.mapQuery} data-map-src={mapEmbedSrc(c)}>
         <div className="contact__map-fallback">
           <Icon name="pin" className="i-lg" />
           <p>
