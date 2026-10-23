@@ -1,7 +1,7 @@
 // Contact details (set by the owner in the admin's settings) and the lazy
 // Google Map, the only third-party request on the site. Copy is the client's.
 
-import { mapEmbedSrc, mapsHref, phoneHref, SOCIAL_LABELS, SOCIALS, whatsappHref } from '@vyona/core';
+import { mailHref, mapEmbedSrc, mapsHref, phoneHref, SOCIAL_LABELS, SOCIALS, whatsappHref } from '@vyona/core';
 import { Icon } from '@vyona/ui';
 import { getContact } from '@/lib/site';
 import { SOCIAL_ICON, socialText } from '@/lib/social';
@@ -38,7 +38,9 @@ export async function Contact({ headingLevel = 2 }: { headingLevel?: 1 | 2 }) {
           </li>
           <li>
             <Icon name="mail" className="i" />
-            <a href={`mailto:${c.email}`}>{c.email}</a>
+            <a href={mailHref(c.email)} data-mail>
+              {c.email}
+            </a>
           </li>
           {SOCIALS.filter((k) => c.social[k]).map((k) => (
             <li key={k}>

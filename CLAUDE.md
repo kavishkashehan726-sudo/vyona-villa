@@ -46,7 +46,8 @@ apps/
                     PaymentStatus, Runtime (global effects, once), PageEffects (per page)
     src/client/     the prototype's js/ ported to TS: booking, hero, motion, ripple, cursor,
                     magnetic, villa3d + water, gallery, images, capability, store, boot;
-                    checkout (API calls, PayHere form post, hold id in sessionStorage)
+                    checkout (API calls, PayHere form post, hold id in sessionStorage);
+                    mail (email links: Gmail / copy fallback)
     src/lib/        site.ts + media.ts (server only, Prisma); booking.ts (request parsing,
                     error responses, hold rate limit), payhere.ts (notify → queue);
                     rooms, content, gallery, villa (pure data, safe in client code)
@@ -307,6 +308,12 @@ elements, pointed-oval seed logo.
   `scrollToSection` in `client/ui.ts`), only from the top of the page and without a hash,
   instantly under reduced motion. It stops with an 80px strip of the hero under the nav (the
   client's screenshot, Oct 2026), less when the section doesn't fit the screen.
+- **Email links** are `mailHref()` (`mailto:` with the subject "Enquiry about VYONA") plus
+  `data-mail`. `client/mail.ts` lets the mail app open as usual; a page can't detect a missing
+  mail app, so if the window neither blurs nor hides within 1.5 s of the click (or the link is
+  clicked again within 30 s) a panel under the link offers "Write in Gmail" (compose URL, new tab)
+  and "Copy address". Gmail can't be opened automatically after the wait: a `window.open`
+  outside the click is blocked as a pop-up.
 - Uploads: JPEG/PNG/WebP up to 15 MB (server action body limit 16 MB); HEIC is refused.
   The seed creates photos only if missing, and `media:import` keeps files replaced in the admin.
 - Owner emails link to the booking in the admin via `ADMIN_URL`.

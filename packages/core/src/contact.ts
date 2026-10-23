@@ -160,3 +160,6 @@ export async function followMapLink(link: string, fetcher: typeof fetch = fetch)
 
 export const phoneHref = (phone: string) => `tel:${phone.replace(/[^\d+]/g, '')}`;
 export const whatsappHref = (digits: string) => `https://wa.me/${digits}`;
+/** Opens the visitor's mail app with a new message to the villa, the subject filled in. */
+export const mailHref = (email: string, subject = 'Enquiry about VYONA') =>
+  `mailto:${email.trim()}?subject=${encodeURIComponent(subject)}`;

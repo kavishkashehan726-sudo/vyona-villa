@@ -742,6 +742,22 @@ dialog::backdrop { background: rgb(28 28 20 / 0.6); backdrop-filter: blur(4px); 
 .proto-badge p { margin: 0; }
 .proto-badge__short { display: none; }
 
+/* Shown under an email link when no mail app took it (client/mail.ts) */
+.mail-help {
+  position: absolute; z-index: 90; width: min(340px, calc(100% - 32px));
+  padding: 1.1rem 1.2rem 1.2rem; border-radius: 14px; background: var(--ivory);
+  border: 1px solid rgb(168 139 94 / 0.4); box-shadow: var(--shadow);
+  font-family: var(--sans); color: var(--taupe);
+  opacity: 0; transform: translate3d(0, -6px, 0); transition: opacity 0.4s var(--ease), transform 0.4s var(--ease);
+}
+.mail-help.is-on { opacity: 1; transform: none; }
+.mail-help[hidden] { display: none; }
+.mail-help__title { margin: 0 2.4rem 0.2rem 0; font-size: var(--fs-caps); letter-spacing: 0.22em; text-transform: uppercase; color: var(--bronze); }
+.mail-help__to { margin: 0 0 0.9rem; font-family: var(--serif); font-size: 1.25rem; color: var(--ink); overflow-wrap: anywhere; }
+.mail-help__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.mail-help__actions .btn { flex: 1 1 auto; padding-inline: 1rem; letter-spacing: 0.18em; }
+.mail-help__close { position: absolute; right: 0.6rem; top: 0.6rem; width: 32px; height: 32px; }
+
 .book-bar { display: none; }
 
 .cursor {

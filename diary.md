@@ -5,6 +5,35 @@ Newest entry on top. Read [CLAUDE.md](CLAUDE.md) first for the rules and design 
 
 ---
 
+## 2026-10-23 — Email link falls back to Gmail
+
+### Done
+
+- The contact email (already edited in admin Settings → Contact) now opens a new message with
+  the subject "Enquiry about VYONA" (`mailHref` in `core/contact.ts`, `data-mail` on the link).
+- `client/mail.ts`, started from `Runtime`: when no mail app takes the `mailto:` (the window
+  doesn't blur or hide within 1.5 s), or the visitor clicks the link again, a small panel under
+  the link offers "Write in Gmail" (opens Gmail's compose in a new tab, address and subject
+  filled in) and "Copy address" (toast). Esc, the close button or a click outside closes it.
+
+### Checked
+
+- Typecheck. In headless Chromium (no mail app): the panel appears at 1440 and 375 px, stays
+  16 px inside the viewport with no horizontal scroll, the Gmail link is
+  `view=cm&to=…&su=Enquiry%20about%20VYONA`, Copy puts the address on the clipboard and focus
+  returns to the link.
+
+### Problems hit
+
+- The panel's left clamp ran in the wrong order and sat 9 px from the edge when a scrollbar
+  took width; it now clamps to 16 px last and sizes against the containing block, not `100vw`.
+
+### Next
+
+- Try on a real phone and on a desktop with a mail app: the panel should not appear.
+
+---
+
 ## 2026-10-08 — Domain back
 
 ### Done

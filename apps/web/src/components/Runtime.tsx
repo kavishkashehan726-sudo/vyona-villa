@@ -1,7 +1,7 @@
 'use client';
 
 // Site-wide behaviour that lives for the whole visit: capability classes,
-// blur-up loading, the booking drawer, cursor, magnetic buttons and ripple.
+// blur-up loading, the booking drawer, email links, cursor, magnetic buttons and ripple.
 // Page-specific effects are in PageEffects.
 
 import { useEffect } from 'react';
@@ -10,6 +10,7 @@ import { getCap } from '@/client/capability';
 import { initCursor } from '@/client/cursor';
 import { watchImages } from '@/client/images';
 import { initMagnetic } from '@/client/magnetic';
+import { initMail } from '@/client/mail';
 import { initRipple } from '@/client/ripple';
 import { initBadge } from '@/client/ui';
 
@@ -26,6 +27,7 @@ export function Runtime() {
     watchImages();
     initBadge();
     initBooking();
+    initMail();
     if (cap.cursor) {
       initCursor();
       initMagnetic();
