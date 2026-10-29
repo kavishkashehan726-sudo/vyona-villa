@@ -11,7 +11,7 @@ import { Runtime } from '@/components/Runtime';
 import type { BootData } from '@/client/boot';
 import { clientPhotos, getPhotos } from '@/lib/media';
 import { getContact, getRooms, getSettings, indexable, jsonScript, lodgingJsonLd, lowestRate, SITE_URL } from '@/lib/site';
-import { cormorant, jost, script } from './fonts';
+import { cormorant, jost } from './fonts';
 import './globals.css';
 import './site.css';
 
@@ -60,7 +60,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   return (
     // The inline script adds `js` before first paint, so reveals start hidden.
-    <html lang="en" className={`${cormorant.variable} ${jost.variable} ${script.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${cormorant.variable} ${jost.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
       </head>

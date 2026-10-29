@@ -304,6 +304,8 @@ elements, pointed-oval seed logo.
   replaces the calendar section with a Booking.com button, redirects `/book` and makes
   `POST /api/bookings` answer 409. `externalBookingUrl()` returns null (book here) unless it's off
   and a valid booking.com https link is set; the admin refuses off without a link.
+- Above "Message us on WhatsApp" the contact section reads "For bookings, longer stays and general
+  enquiries" (client, Oct 2026).
 - The contact page scrolls to the details on arrival (`<PageEffects scrollTo="contact">`,
   `scrollToSection` in `client/ui.ts`), only from the top of the page and without a hash,
   instantly under reduced motion. It stops with an 80px strip of the hero under the nav (the
@@ -350,8 +352,9 @@ elements, pointed-oval seed logo.
   `1 - DHARA`. Tara's keywords are missing, and Tara borrows Vyoma's photos for now.
 - Hero: "Your home on the South Coast. *Naturally.*" ("Naturally." italic bronze), sub-heading
   "Seven rooms. Each with a nature of its own." (Oct 2026; was "Seven rooms among the palms…"),
-  handwritten
-  "Weligama / Sri Lanka" top right (Mrs Saint Delafield), button `BOOK YOUR STAY →`.
+ button
+  `BOOK YOUR STAY →`. The handwritten "Weligama / Sri Lanka" top right was removed (client,
+  Oct 2026), and its font with it.
 - Nav: STAY · EXPLORE · ABOUT | logo | GALLERY · CONTACT · Book your stay.
 - Explore: VYONA / FOOD / BEYOND VYONA columns, Stay intro, "In every room" and "A room, and a
   little more": use the client's copy word for word (in `client updates/`). About has no copy yet.

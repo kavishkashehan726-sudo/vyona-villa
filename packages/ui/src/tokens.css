@@ -17,7 +17,6 @@
 
   --font-serif: var(--font-cormorant), 'Cormorant Garamond', Garamond, 'Times New Roman', serif;
   --font-sans: var(--font-jost), 'Jost', 'Helvetica Neue', Arial, sans-serif;
-  --font-script: var(--font-script-face), cursive;
 
   --text-hero: clamp(2.7rem, 1.5rem + 4.2vw, 5.2rem);
   --text-h2: clamp(2rem, 1.35rem + 2.3vw, 3.4rem);
