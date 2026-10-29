@@ -17,7 +17,6 @@
   /* Font files come from next/font (app/fonts.ts), which sets these variables on <html>. */
   --serif: var(--font-cormorant), 'Cormorant Garamond', Garamond, 'Times New Roman', serif;
   --sans: var(--font-jost), 'Jost', 'Helvetica Neue', Arial, sans-serif;
-  --script: var(--font-script-face), cursive;
   --bronze-light: #d4b98c;
 
   --fs-hero: clamp(2.7rem, 1.5rem + 4.2vw, 5.2rem);
@@ -284,15 +283,6 @@ hr { border: 0; margin: 0; }
 .hero__title .line > span { display: block; }
 .hero__title em { font-style: italic; color: var(--bronze-light); }
 .hero__lede { font-family: var(--sans); font-weight: 300; font-size: clamp(0.98rem, 0.92rem + 0.3vw, 1.18rem); letter-spacing: 0.03em; line-height: 1.7; margin-bottom: 2.2rem; }
-.hero__script {
-  position: absolute; top: clamp(1.2rem, 4vh, 2.6rem); right: max(var(--gutter), (100% - var(--maxw)) / 2 + var(--gutter));
-  margin: 0; font-family: var(--script); font-size: clamp(2.3rem, 1.5rem + 2.6vw, 4.4rem); line-height: 0.82;
-  text-align: right; transform: rotate(-5deg); text-shadow: 0 2px 24px rgb(0 0 0 / 0.25); pointer-events: none;
-}
-.hero__script span { display: block; }
-.hero__script span + span { margin-right: -0.4em; }
-.hero__script svg { display: block; width: 72%; height: 0.32em; margin: 0.06em 0 0 auto; overflow: visible; }
-.hero__script path { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
 
 /* Subpage head: the hero's frame at a shorter height, one photo. */
 .hero--page { height: min(72svh, 680px); min-height: 420px; }
@@ -642,6 +632,7 @@ hr { border: 0; margin: 0; }
 .contact__list li { display: flex; gap: 0.9rem; align-items: center; }
 .contact__list .i { color: var(--bronze); width: 20px; height: 20px; }
 .contact__list a { text-decoration: none; border-bottom: 1px solid rgb(43 42 38 / 0.2); }
+.contact__lead { margin-bottom: 0.9rem; color: var(--ink); }
 .contact__map { position: relative; min-height: 420px; border-radius: 18px; overflow: hidden; background: var(--sand); }
 .contact__map iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; filter: grayscale(0.55) sepia(0.2) contrast(0.95); }
 .contact__map-fallback { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; text-align: center; color: var(--taupe); gap: 0.6rem; }
@@ -912,7 +903,6 @@ dialog::backdrop { background: rgb(28 28 20 / 0.6); backdrop-filter: blur(4px); 
   .more { grid-template-columns: minmax(0, 1fr); }
   .more__img { min-height: 300px; }
   .room-page { grid-template-columns: minmax(0, 1fr); }
-  .hero__script { font-size: 2.2rem; top: 1rem; }
   .villa3d__card { left: 0.8rem; right: 0.8rem; width: auto; top: auto; bottom: 0.8rem; height: 58%; }
   .villa3d__card > img { display: none; }
   .villa3d__hint { display: none; }

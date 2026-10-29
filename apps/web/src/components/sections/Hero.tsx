@@ -19,14 +19,6 @@ export function Hero() {
       </div>
       <HeroFrame />
 
-      <p className="hero__script">
-        <span>Weligama</span>
-        <span>Sri Lanka</span>
-        <svg viewBox="0 0 120 12" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M3 8c22-5 52-7 82-4 10 1 21 2.6 32 4" />
-        </svg>
-      </p>
-
       <div className="hero__content" data-depth="-0.2">
         <h1 className="hero__title">
           <span className="line">

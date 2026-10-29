@@ -1,4 +1,4 @@
-import { Cormorant_Garamond, Jost, Mrs_Saint_Delafield } from 'next/font/google';
+import { Cormorant_Garamond, Jost } from 'next/font/google';
 
 // Display face. The hero is set in the italic.
 export const cormorant = Cormorant_Garamond({
@@ -17,10 +17,3 @@ export const jost = Jost({
   display: 'swap',
 });
 
-// The handwritten "Weligama / Sri Lanka" in the hero, from the client's reference.
-export const script = Mrs_Saint_Delafield({
-  subsets: ['latin'],
-  weight: '400',
-  variable: '--font-script-face',
-  display: 'swap',
-});

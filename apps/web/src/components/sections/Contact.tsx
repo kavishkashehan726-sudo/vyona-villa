@@ -52,9 +52,12 @@ export async function Contact({ headingLevel = 2 }: { headingLevel?: 1 | 2 }) {
           ))}
         </ul>
         {c.whatsapp && (
-          <a className="btn btn--line magnetic" href={whatsappHref(c.whatsapp)} target="_blank" rel="noopener" data-cursor="Chat">
-            <Icon name="whatsapp" className="i" /> Message us on WhatsApp
-          </a>
+          <>
+            <p className="contact__lead">For bookings, longer stays and general enquiries</p>
+            <a className="btn btn--line magnetic" href={whatsappHref(c.whatsapp)} target="_blank" rel="noopener" data-cursor="Chat">
+              <Icon name="whatsapp" className="i" /> Message us on WhatsApp
+            </a>
+          </>
         )}
         {!c.saved && <p className="proto-note">Phone, WhatsApp and email are placeholders.</p>}
       </div>

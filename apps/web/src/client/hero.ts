@@ -77,7 +77,7 @@ export function initHero(hero: HTMLElement, cap: Capability) {
     const q = gsap.utils.selector(hero);
     const intro = gsap.timeline({ defaults: { ease: 'expo.out' }, delay: 0.15 });
     tl = intro;
-    // Page heroes have no script, rail or dots; skip steps with nothing to animate.
+    // Page heroes have no rail or dots; skip steps with nothing to animate.
     const from = (sel: string, vars: gsap.TweenVars, at?: string) => {
       const els = q(sel);
       if (els.length) intro.from(els, vars, at);
@@ -85,7 +85,6 @@ export function initHero(hero: HTMLElement, cap: Capability) {
     from('.hero__title .line > span', { yPercent: 110, duration: 1.5, stagger: 0.12 });
     from('.hero__content .rule', { scaleX: 0, transformOrigin: 'left', duration: 1.2 }, '-=1.1');
     from('.hero__lede, .hero__content .btn', { opacity: 0, y: 18, duration: 1.2, stagger: 0.1 }, '-=1');
-    from('.hero__script', { opacity: 0, y: -12, rotate: -9, duration: 1.6 }, '-=1.2');
     from('.hero__rail', { opacity: 0, x: 20, duration: 1.4 }, '-=1.4');
     from('.hero__dots, .hero__scroll', { opacity: 0, duration: 1 }, '-=1');
   }
