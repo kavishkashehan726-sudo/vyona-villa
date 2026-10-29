@@ -16,7 +16,7 @@ export async function Booking({ room, title = 'Choose your dates.' }: { room?: s
           </h2>
           <p>We take bookings through Booking.com. Choose your room and dates there, and we&rsquo;ll look after the rest.</p>
           <a className="btn btn--olive magnetic" href={out} target="_blank" rel="noopener" data-cursor="Book">
-            Book on Booking.com <Icon name="arrow" className="i" />
+            Book now <Icon name="arrow" className="i" />
           </a>
         </div>
       </section>
