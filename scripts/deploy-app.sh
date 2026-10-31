@@ -19,7 +19,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-[ -f "$ROOT/scripts/deploy.env" ] && . "$ROOT/scripts/deploy.env"
+# tr: a deploy.env saved by a Windows editor has CRLF line endings, which would end up in the values.
+[ -f "$ROOT/scripts/deploy.env" ] && . <(tr -d '\r' < "$ROOT/scripts/deploy.env")
 
 : "${DEPLOY_HOST:?set DEPLOY_HOST in scripts/deploy.env}"
 : "${DEPLOY_USER:?set DEPLOY_USER in scripts/deploy.env}"
@@ -34,7 +35,11 @@ TARGET="$DEPLOY_USER@$DEPLOY_HOST"
 APP="$DEPLOY_APP_DIR"
 # Non-interactive ssh skips the nvm lines in .bashrc, so node and pm2 are loaded here.
 remote() { ssh "${SSH_OPTS[@]}" "$TARGET" "set -e; . \"\$HOME/.nvm/nvm.sh\" >/dev/null 2>&1 || true; cd '$APP'; $1"; }
+# Git Bash on Windows has no rsync, so folders go through tar over ssh there instead.
+HAVE_RSYNC=0; command -v rsync >/dev/null && HAVE_RSYNC=1
 up() { rsync -az -e "ssh ${SSH_OPTS[*]}" "$@"; }
+# put <local file> <remote name> <mode>: CRs are stripped, in case git checked it out with CRLF.
+put() { tr -d '\r' < "$1" | remote "cat > '$2.tmp' && chmod $3 '$2.tmp' && mv -f '$2.tmp' '$2'"; }
 
 HEALTH="wp=\$(sed -n 's/^WEB_PORT=//p' .env); ap=\$(sed -n 's/^ADMIN_PORT=//p' .env)
 check() { curl -fsS -o /dev/null -w '%{http_code}' \"http://127.0.0.1:\$1/api/health\" 2>/dev/null || true; }"
@@ -62,7 +67,8 @@ while [ $# -gt 0 ]; do
     --images) IMAGES=1; shift ;;
     --backups)
       mkdir -p "$ROOT/backups"
-      up "$TARGET:$APP/backups/" "$ROOT/backups/"
+      if [ "$HAVE_RSYNC" = 1 ]; then up "$TARGET:$APP/backups/" "$ROOT/backups/"
+      else remote "tar -cf - -C backups ." | tar -xf - -C "$ROOT/backups"; fi
       echo "✓ backups in $ROOT/backups"; exit 0 ;;
     --status)
       remote "pm2 list; echo; echo \"current: \$(readlink current)\"; ls -1t releases; echo
@@ -82,6 +88,7 @@ if [ -n "$TAG" ]; then
 else
   read -r SHA RUN < <(gh run list -w ci.yml -b main -s success -L 1 --json headSha,databaseId -q '.[0] | "\(.headSha) \(.databaseId)"') || true
 fi
+SHA="${SHA:-}" RUN="${RUN:-}"; SHA="${SHA%$'\r'}" RUN="${RUN%$'\r'}"   # gh.exe on Windows may end lines with CR
 [ -n "${SHA:-}" ] || { echo "✗ no green CI run of main yet"; exit 1; }
 echo "→ release ${SHA:0:7}"
 
@@ -90,11 +97,13 @@ remote "[ -f .env ] || { echo '✗ no .env in $APP: copy deploy/env.example ther
 command -v pm2 >/dev/null || { echo '✗ no pm2 for $DEPLOY_USER: see deploy/README.md'; exit 1; }
 node -e 'process.exit(+process.versions.node.split(\".\")[0] >= 24 ? 0 : 1)' || { echo '✗ Node 24 is needed'; exit 1; }"
 
-up --chmod=F644 "$ROOT/deploy/ecosystem.config.cjs" "$TARGET:$APP/"
-up --chmod=F755 "$ROOT/deploy/backup.sh" "$ROOT/deploy/watchdog.sh" "$TARGET:$APP/"
+put "$ROOT/deploy/ecosystem.config.cjs" ecosystem.config.cjs 644
+put "$ROOT/deploy/backup.sh" backup.sh 755
+put "$ROOT/deploy/watchdog.sh" watchdog.sh 755
 if [ "$IMAGES" = 1 ]; then
   echo "→ client photos"
-  up --chmod=F644,D755 "$ROOT/images/" "$TARGET:$APP/images/"
+  if [ "$HAVE_RSYNC" = 1 ]; then up --chmod=F644,D755 "$ROOT/images/" "$TARGET:$APP/images/"
+  else tar -cf - -C "$ROOT/images" . | remote "tar -xf - -C images --no-same-permissions && chmod -R u=rwX,go=rX images"; fi
 fi
 
 ROLLBACK=0

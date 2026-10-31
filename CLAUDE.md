@@ -480,6 +480,10 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
   the email the same day and the registry went back to Cloudflare. Check the registry, not the
   local resolver, which kept a stale answer: `dig +noall +authority NS vyonaweligama.com
   @a.gtld-servers.net`.
+- **Deploying from Windows (Git Bash)** works: Git Bash has no rsync, so `deploy-app.sh` sends the
+  three deploy files through `ssh … cat` with CRs stripped and falls back to tar over ssh for
+  `--images`/`--backups`. `deploy.env` is read with CRs stripped; `.gitattributes` keeps scripts LF.
+  It needs the GitHub CLI (`gh auth login`) on the PC.
 - `scp` takes `-P` for the port, `ssh` takes `-p`. Sharing one options array between them makes
   scp read the port number as a filename.
 - Base64 costs about a third on the wire even after gzip: the same page is 2.82 MB compressed
