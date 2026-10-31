@@ -1,0 +1,6 @@
+# Scripts run on Linux (the server, CI, Docker): keep LF even on a Windows checkout.
+*.sh   text eol=lf
+*.cjs  text eol=lf
+*.mjs  text eol=lf
+*.env.example text eol=lf
+deploy/env.example text eol=lf
