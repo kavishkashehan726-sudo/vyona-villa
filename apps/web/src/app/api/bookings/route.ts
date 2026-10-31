@@ -9,7 +9,7 @@ import { bookingFailure, canHold, clientIp, countHold, fail, json, parseHold } f
 
 export async function POST(req: Request) {
   if (externalBookingUrl(await loadSettings())) {
-    return fail('BOOKING_OFF', 'We take bookings through Booking.com at the moment.', 409);
+    return fail('BOOKING_OFF', 'Online booking is not available at the moment.', 409);
   }
   const ip = clientIp(req);
   if (!canHold(ip)) {

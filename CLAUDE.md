@@ -301,9 +301,10 @@ elements, pointed-oval seed logo.
 - **Booking mode** (`onlineBooking`, `bookingComUrl` settings; admin Settings → How guests book):
   off sends every `[data-open-booking]` button to the Booking.com page in a new tab
   (`client/booking.ts` instead of the drawer; `pointBookLinks` rewrites the hrefs per page),
-  replaces the calendar section with a "Book now" button (client, Oct 2026), redirects `/book` and makes
+  replaces the calendar section with a centred "Book now" button and nothing else (client, Oct 2026), redirects `/book` and makes
   `POST /api/bookings` answer 409. `externalBookingUrl()` returns null (book here) unless it's off
-  and a valid booking.com https link is set; the admin refuses off without a link.
+  and a valid booking.com https link is set; the admin refuses off without a link. **Visitors never
+  see the words Booking.com** (client, Oct 2026): buttons and copy read as booking with the villa.
 - Above "Message us on WhatsApp" the contact section reads "For bookings, longer stays and general
   enquiries" (client, Oct 2026).
 - The contact page scrolls to the details on arrival (`<PageEffects scrollTo="contact">`,

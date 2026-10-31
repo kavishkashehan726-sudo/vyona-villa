@@ -532,8 +532,7 @@ hr { border: 0; margin: 0; }
 }
 .booking__intro { color: var(--taupe); }
 .booking__intro .h2 { color: var(--ink); margin-bottom: 1.2rem; }
-.booking--out { grid-template-columns: minmax(0, 40rem); }
-.booking--out .btn { margin-top: 1.8rem; }
+.booking--out { display: flex; justify-content: center; padding-block: clamp(3rem, 7vw, 5.5rem); }
 .legend { display: flex; flex-wrap: wrap; gap: 0.6rem 1.4rem; margin-top: 1.6rem; font-family: var(--sans); font-size: 0.74rem; letter-spacing: 0.08em; }
 .legend li { display: flex; align-items: center; gap: 0.5rem; }
 .legend__sw { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgb(43 42 38 / 0.2); }

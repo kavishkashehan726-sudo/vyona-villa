@@ -18,7 +18,7 @@ export async function Cta() {
             <>
               Check availability and book your stay
               <br />
-              on Booking.com.
+              with us.
             </>
           ) : (
             <>
