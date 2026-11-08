@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function ExplorePage() {
   return (
     <>
-      <PageHero photo="pool-swimmer" eyebrow="Explore" lines={['Stay in.', 'Or wander out.']} />
+      <PageHero photo="house-aerial" eyebrow="Explore" lines={['Stay in.', 'Or wander out.']} />
       <Explore />
       <Cta />
       <PageEffects />

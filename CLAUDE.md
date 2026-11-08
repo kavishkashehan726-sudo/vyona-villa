@@ -242,7 +242,16 @@ elements, pointed-oval seed logo.
 - Photos are not `next/image`: `media:import` makes WebP (1200px, q60, as the prototype) plus a
   24px LQIP on the `Media` row, `/media/…` serves them with a one-year cache, and `Photo` renders
   the prototype's blur-up `<img class="blur-img" data-img>`. Same CLS and blur, no optimiser on a
-  memory-tight VPS.
+  memory-tight VPS. Photos marked `hero: true` in `media-data.ts` (home slides, page heroes) are
+  made at 2048px, q62: a 1200px photo stretched full-screen was the blurry hero.
+- **Photo file names change with their source** (Nov 2026): the import writes
+  `photos/<key>.<hash>.webp` (hash of the source file and `RECIPE`), because `/media/` is
+  `immutable` for a year and a new photo under an old URL would never reach Cloudflare or returning
+  visitors. It converts again only when the source changed; an admin replacement
+  (`photos/<key>-<hash>.webp`) is never overwritten. Bump `RECIPE` when `convertPhoto` changes.
+  Old files are left on disk for pages still being served.
+- After converting, the import moves each room still showing exactly its
+  `LEGACY_ROOM_PHOTOS` list to the `ROOMS` list (seed-data); a room the owner changed is left.
 - The mobile booking sheet is the prototype's own drawer (`[data-drawer]` in the layout), not
   vaul. Book buttons are `<Link href="/book" data-open-booking>`: `client/booking.ts` intercepts
   them in the capture phase, so without JS they still reach the /book page.
@@ -345,12 +354,16 @@ elements, pointed-oval seed logo.
 
 ## Content decisions
 
+- Room photos follow the client's folders by room (Nov 2026). Rooms 1 and 2 share the studio folder
+  (Dhara gets the day shots, Jala the evening ones). `DSC01865`/`DSC01868` were in both room 3 and
+  room 5; they went to Vayu (3), whose own photos show the same high window. The two bathroom
+  shots went to Agni and Soma by their timestamps.
 - Rooms, from the client's brief (`packages/db/src/seed-data.ts`): 1 Dhara (earth), 2 Jala
   (water), 3 Vayu (air), 4 Agni (fire), 5 Soma (moon), 6 Surya (sun), 7 Tara (star). **Vyoma is
   dropped.** Two 26 m² studios at $95 and five king rooms at $50–$75. Room cards read
   `[icon] DHARA` with the room number under the name (client, Oct 2026: no element word there);
   the dialog's and booking confirm's eyebrow is the bare element ("Earth"), the dialog title
-  `1 - DHARA`. Tara's keywords are missing, and Tara borrows Vyoma's photos for now.
+  `1 - DHARA`. Tara's keywords are missing; its cover keeps the key `room-vyoma`.
 - Hero: "Your home on the South Coast. *Naturally.*" ("Naturally." italic bronze), sub-heading
   "Seven rooms. Each with a nature of its own." (Oct 2026; was "Seven rooms among the palms…"),
  button
@@ -471,8 +484,11 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
   to the photo's natural height.
 - Day cells in the calendar carry `data-day` as **epoch day numbers**, not ISO dates.
 - Hover styles must not override `.is-start` / `.is-end` in the calendar.
-- The client's photos are WhatsApp-compressed to ~1200px; hero images can't go sharper until the
-  originals arrive.
+- The first client photos (`images/WhatsApp Image …`) are WhatsApp-compressed to ~1200px. The
+  photographer's set (Nov 2026) is in `images/2026-11/` and replaced the hero, room and dining
+  photos; the remaining WhatsApp photos are details with no new equivalent (tea, fruit, hats,
+  pool deck). Of that set, `room 1+2/DSCO.jpg` carries a Google Generative AI credential (C2PA)
+  and is not used.
 - Playwright MCP can only write inside the project, hence `.playwright-mcp/` (ignored).
 - **The Namecheap registrant contact must stay verified.** On 2026-10-08 Namecheap had swapped
   the nameservers for `failed-whois-verification.namecheap.com` (site and admin unreachable,
@@ -499,7 +515,9 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
 
 ## Waiting on the client
 
-Whether guests may pay at the villa (`payAtVilla`), the PayHere charge currency (USD or LKR),
+Whether the two aerial shots (`2256686320..jpg`, `26263262.jpg`, 2400 × 1792, no camera data)
+are the real drone photos, which rooms `DSC01865`/`DSC01868` and the bathroom shots show,
+whether guests may pay at the villa (`payAtVilla`), the PayHere charge currency (USD or LKR),
 Tara's keywords, whether the Booking.com rate is the nightly rate or includes
 the service charge or a markup, the Beds24 room ids (and a check of blackout against the real
 account), About copy and host photos, Explore subpage copy (both pages blocked until then), the

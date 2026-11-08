@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Icon, Palm } from '@vyona/ui';
 import { Slide } from '../Photo';
 
-const SLIDES = ['hero-pool-sunrise', 'hero-pool-cottage', 'hero-house', 'hero-pool-aerial'];
+const SLIDES = ['hero-pool-cottage', 'hero-house', 'hero-pool-aerial', 'hero-night'];
 
 export function Hero() {
   return (

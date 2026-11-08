@@ -22,7 +22,7 @@ export default async function StayPage() {
   const rooms = await getRooms();
   return (
     <>
-      <PageHero photo="room-wide" eyebrow="Stay" lines={['Seven rooms.', 'Each with a nature', 'of its own.']} />
+      <PageHero photo="studio-garden" eyebrow="Stay" lines={['Seven rooms.', 'Each with a nature', 'of its own.']} />
 
       <div className="stay-intro reveal">
         <p>
