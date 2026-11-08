@@ -2,12 +2,16 @@ import type { Metadata } from 'next';
 import { PageEffects } from '@/components/PageEffects';
 import { Gallery } from '@/components/sections/Gallery';
 import { PageHero } from '@/components/sections/Hero';
+import { pageMeta } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Gallery',
-  description: 'Photos of VYONA: the rooms, the pool, the garden and breakfast in Weligama.',
-  alternates: { canonical: '/gallery' },
-};
+export const generateMetadata = (): Promise<Metadata> =>
+  pageMeta({
+    title: 'Gallery',
+    description:
+      'Photos of VYONA: the rooms, the pool, the garden and breakfast in Weligama.',
+    path: '/gallery',
+    photo: 'hero-pool-aerial',
+  });
 
 export default function GalleryPage() {
   return (

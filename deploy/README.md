@@ -265,7 +265,9 @@ Done on 2026-10-06. The steps, for a server set up from scratch:
 
 Still to do:
 
-1. Once real prices are confirmed, set `SITE_INDEXABLE=1` in `.env` and run
-   `scripts/deploy-app.sh --restart`. `robots.txt` and the `noindex` tag both follow
-   the setting, with no rebuild needed.
+1. Search engines: `SITE_INDEXABLE=1` in `.env` (on since 2026-11-08), then
+   `scripts/deploy-app.sh --restart`. `robots.txt`, the robots tag and the sitemap line
+   follow it, with no rebuild. Sitemap: `https://vyonaweligama.com/sitemap.xml`, submitted
+   in Google Search Console (Domain property, verified by a DNS TXT record in Cloudflare, or
+   a URL-prefix property with `GOOGLE_SITE_VERIFICATION` set to the tag's content).
 2. Set the PayHere notify URL and the Beds24 webhook to the live domain.

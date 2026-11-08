@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { loadMaintenance } from '@vyona/core';
 import { Mark } from '@vyona/ui';
 import { requireAdmin } from '@/lib/session';
 import { signOut } from '../login/actions';
@@ -8,6 +9,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
 export default async function DeskLayout({ children }: { children: ReactNode }) {
   const admin = await requireAdmin();
+  const maintenance = await loadMaintenance();
   return (
     <div className="shell">
       <header className="rail">
@@ -30,6 +32,12 @@ export default async function DeskLayout({ children }: { children: ReactNode }) 
         </div>
       </header>
       <main className="desk" id="main">
+        {maintenance && (
+          <p className="note">
+            The website is in maintenance mode: visitors see the maintenance page.{' '}
+            <a href="/settings#maintenance">Turn it off in Settings</a>.
+          </p>
+        )}
         {children}
       </main>
     </div>

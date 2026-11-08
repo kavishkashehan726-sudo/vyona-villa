@@ -9,6 +9,8 @@ import { Price } from '@/components/Price';
 import { Booking } from '@/components/sections/Booking';
 import { Cta } from '@/components/sections/Cta';
 import { RoomCards } from '@/components/sections/Rooms';
+import { getPhotos } from '@/lib/media';
+import { pageMeta } from '@/lib/seo';
 import { getRooms, roomSpecs, roomTitle, SITE_URL } from '@/lib/site';
 
 async function findRoom(slug: string) {
@@ -19,17 +21,19 @@ async function findRoom(slug: string) {
 export async function generateMetadata({ params }: PageProps<'/stay/[slug]'>): Promise<Metadata> {
   const { room } = await findRoom((await params).slug);
   if (!room) return {};
-  return {
+  return pageMeta({
     title: `${room.name}, the ${room.element} room`,
     description: `${room.category}, ${room.sizeSqm} m², for up to ${room.maxGuests} guests. ${room.features.join(', ')}.`,
-    alternates: { canonical: `/stay/${room.slug}` },
-  };
+    path: `/stay/${room.slug}`,
+    photo: room.photos[0],
+  });
 }
 
 export default async function RoomPage({ params }: PageProps<'/stay/[slug]'>) {
   const { rooms, room } = await findRoom((await params).slug);
   if (!room) notFound();
   const others = rooms.filter((r) => r.slug !== room.slug);
+  const photos = await getPhotos();
 
   return (
     <>
@@ -97,11 +101,16 @@ export default async function RoomPage({ params }: PageProps<'/stay/[slug]'>) {
           '@type': 'HotelRoom',
           name: `${room.name}, the ${room.element} room`,
           url: `${SITE_URL}/stay/${room.slug}`,
+          description: `${room.category}, ${room.sizeSqm} m², for up to ${room.maxGuests} guests.`,
+          image: room.photos
+            .map((k) => photos[k]?.src)
+            .filter((src): src is string => !!src)
+            .map((src) => `${SITE_URL}${src}`),
           floorSize: { '@type': 'QuantitativeValue', value: room.sizeSqm, unitCode: 'MTK' },
           occupancy: { '@type': 'QuantitativeValue', maxValue: room.maxGuests },
           bed: { '@type': 'BedDetails', typeOfBed: 'King', numberOfBeds: 1 },
           amenityFeature: room.features.map((f) => ({ '@type': 'LocationFeatureSpecification', name: f, value: true })),
-          containedInPlace: { '@type': 'LodgingBusiness', name: 'VYONA Weligama', url: SITE_URL },
+          containedInPlace: { '@type': 'LodgingBusiness', '@id': `${SITE_URL}/#villa`, name: 'VYONA Weligama', url: SITE_URL },
         }}
       />
       <PageEffects />

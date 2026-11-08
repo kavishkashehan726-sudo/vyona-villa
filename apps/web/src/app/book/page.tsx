@@ -4,12 +4,14 @@ import { externalBookingUrl } from '@vyona/core';
 import { PageEffects } from '@/components/PageEffects';
 import { Booking } from '@/components/sections/Booking';
 import { getRooms, getSettings } from '@/lib/site';
+import { pageMeta } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Book',
-  description: 'Check availability and book VYONA direct for the best rate.',
-  alternates: { canonical: '/book' },
-};
+export const generateMetadata = (): Promise<Metadata> =>
+  pageMeta({
+    title: 'Book',
+    description: 'Check availability and book VYONA direct for the best rate.',
+    path: '/book',
+  });
 
 export default async function BookPage({ searchParams }: PageProps<'/book'>) {
   // Online booking is off in the admin: guests book on Booking.com (Book buttons already go there with JS).
