@@ -2,6 +2,14 @@
 
 export type GalleryCat = 'rooms' | 'pool' | 'food' | 'spaces';
 
+export const GALLERY_FILTERS: { value: GalleryCat | 'all'; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'rooms', label: 'Rooms' },
+  { value: 'pool', label: 'Pool & garden' },
+  { value: 'food', label: 'Food' },
+  { value: 'spaces', label: 'Spaces' },
+];
+
 export const GALLERY: [key: string, cat: GalleryCat, alt: string][] = [
   ['hero-pool-aerial', 'pool', 'The pool and the roofs from above, ringed by trees'],
   ['studio-garden', 'rooms', 'A studio: two beds, the kitchen and the garden door'],
