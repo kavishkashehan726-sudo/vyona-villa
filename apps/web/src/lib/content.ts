@@ -38,8 +38,8 @@ export const PILLARS: Pillar[] = [
     tag: 'Sometimes the best plan is no plan at all.',
     body: 'The pool, gardens, quiet corners and places to gather. Swim, read, stretch, have another coffee — or simply stay exactly where you are.',
     link: 'Explore VYONA',
-    photo: 'pool-swimmer',
-    alt: 'A guest walks down to the pool beneath a shade sail',
+    photo: 'pool-lounger',
+    alt: 'Fresh juice beside a lounger in the garden',
     depth: 0.12,
     story: [
       {
@@ -71,8 +71,8 @@ export const PILLARS: Pillar[] = [
     tag: 'Fresh · local · delicious',
     body: 'Food always homemade, with ingredients sourced daily close to home — from the sea, the local farms and markets around us.',
     link: 'Come to the table',
-    photo: 'breakfast-view',
-    alt: 'Breakfast of fruit, eggs and coffee on a verandah overlooking paddy fields',
+    photo: 'rice-curry',
+    alt: 'Rice and curry in clay bowls',
     depth: 0.18,
     story: [
       {
@@ -91,7 +91,7 @@ export const PILLARS: Pillar[] = [
       },
       {
         photo: 'dining-wide',
-        alt: 'Long tables in the dining hall',
+        alt: 'Tables and rattan chairs in the dining hall',
         eyebrow: 'The table',
         title: 'Made here.',
         text: ['Long tables in the dining hall, for the days you would rather not go anywhere at all.'],
