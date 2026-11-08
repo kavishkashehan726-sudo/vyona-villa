@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
-import { externalBookingUrl, PAYHERE_LIVE_URL, payhereConfig } from '@vyona/core';
+import { externalBookingUrl } from '@vyona/core';
 import { Icon } from '@vyona/ui';
 import { BookBar } from '@/components/BookBar';
 import { Footer } from '@/components/Footer';
@@ -11,6 +11,7 @@ import { Runtime } from '@/components/Runtime';
 import type { BootData } from '@/client/boot';
 import { clientPhotos, getPhotos } from '@/lib/media';
 import { getContact, getRooms, getSettings, indexable, jsonScript, lodgingJsonLd, lowestRate, SITE_URL } from '@/lib/site';
+import { HOME_DESCRIPTION, HOME_TITLE, SITE_NAME } from '@/lib/seo';
 import { cormorant, jost } from './fonts';
 import './globals.css';
 import './site.css';
@@ -18,16 +19,20 @@ import './site.css';
 // Every page reads rooms, prices and photos from the database.
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: { default: 'VYONA Weligama · Seven rooms on the South Coast', template: '%s · VYONA Weligama' },
-  description:
-    'A seven-room boutique villa among the palms, just beyond the bustle of Weligama, Sri Lanka. Pool, gardens and breakfast made here.',
-  openGraph: { type: 'website', siteName: 'VYONA Weligama', locale: 'en_GB' },
-  // Kept out of search engines until the client confirms real prices. Read at run time (not a
-  // NEXT_PUBLIC_ variable, which the build would bake in), so going live needs no new image.
-  robots: indexable() ? undefined : { index: false, follow: false },
-};
+// Read per request (not NEXT_PUBLIC_ variables, which the build would bake in), so indexing
+// and the Search Console tag change with the server's .env and a restart, no new build.
+export async function generateMetadata(): Promise<Metadata> {
+  const google = process.env.GOOGLE_SITE_VERIFICATION;
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: { default: HOME_TITLE, template: `%s · ${SITE_NAME}` },
+    description: HOME_DESCRIPTION,
+    applicationName: SITE_NAME,
+    // Kept out of search engines until SITE_INDEXABLE=1.
+    robots: indexable() ? { index: true, follow: true } : { index: false, follow: false },
+    ...(google && { verification: { google } }),
+  };
+}
 
 export const viewport: Viewport = { themeColor: '#f1ece3' };
 
@@ -47,16 +52,6 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     settings,
     bookingUrl: externalBookingUrl(settings),
   };
-  // What the preview notice says about card payment, by the gateway this server would use
-  // (nothing while guests book on Booking.com).
-  const payhere = payhereConfig();
-  const payNote = bootData.bookingUrl
-    ? ''
-    : !payhere
-    ? ' Online payment isn’t switched on yet.'
-    : payhere.checkoutUrl === PAYHERE_LIVE_URL
-      ? ''
-      : ' Card payments go to a test gateway; nothing is charged.';
 
   return (
     // The inline script adds `js` before first paint, so reveals start hidden.
@@ -97,20 +92,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <RoomDialog rooms={rooms} />
         <div className="toast" role="status" aria-live="polite" data-toast />
 
-        <aside className="proto-badge" data-proto-badge hidden>
-          <p>
-            <strong>Preview</strong>{' '}
-            <span className="proto-badge__long">
-              Prices and contact details are placeholders.{payNote}
-            </span>
-            <span className="proto-badge__short">Details are placeholders.</span>
-          </p>
-          <button type="button" className="icon-btn" data-proto-close aria-label="Hide preview notice">
-            <Icon name="close" className="i" />
-          </button>
-        </aside>
-
-        <JsonLd data={lodgingJsonLd(rooms, settings, contact)} />
+        <JsonLd data={lodgingJsonLd(rooms, settings, contact, photos)} />
         <script type="application/json" id="vy-boot" dangerouslySetInnerHTML={{ __html: jsonScript(bootData) }} />
         <Runtime />
       </body>

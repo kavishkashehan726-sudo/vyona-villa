@@ -15,7 +15,7 @@ The full system is specified in [docs/booking-engine-spec.md](docs/booking-engin
 - **Phase 1 (current):** the real system in a pnpm + Turborepo monorepo. Build order:
   1 scaffold ✓ · 2 core ✓ · 3 public site ✓ · 4 booking +
   PayHere ✓ · 5 admin ✓ · 6 Beds24 ✓ · 7 production ✓ (PM2, live at the apex and the admin
-  subdomain since 2026-10-06; still noindex, PayHere and Beds24 not connected). Client feedback
+  subdomain since 2026-10-06; indexed since 2026-11-08; PayHere and Beds24 not connected). Client feedback
   lives in `client updates/`
   (gitignored) and is summarised under *Content decisions*.
 
@@ -147,8 +147,9 @@ Live at **https://vyonaweligama.com** (the Next site, `vyona-web` on :3020) and
   returns error 526 to every visitor. Flexible is never right: CloudPanel's own HTTPS redirect
   turns it into a redirect loop.
 - `www` 301s to the apex. Both records are proxied (orange cloud).
-- The site is `noindex` and `robots.txt` disallows everything until `SITE_INDEXABLE=1`
-  (prices are still placeholders).
+- Search engines may index the site since 2026-11-08 (`SITE_INDEXABLE=1` in the server's
+  `.env`; the client manages prices and contact details in the admin). The sitemap,
+  `https://vyonaweligama.com/sitemap.xml`, goes into Google Search Console.
 
 **Phase 1** (runbook: [deploy/README.md](deploy/README.md)) runs under **PM2** as the site user,
 with Postgres 17 and Redis installed on the server. CI's `release` job (main only) runs
@@ -183,7 +184,8 @@ restarts the apps (after an `.env` edit). The server's
   5 minutes, nightly backup), the two CloudPanel reverse-proxy sites and `client_max_body_size 16m` on
   the admin vhost.
 - Indexing is `SITE_INDEXABLE=1` in the server's `.env`, read at run time by the layout's
-  `robots` and `app/robots.ts`; `deploy-app.sh --restart`, no rebuild.
+  `robots` and `app/robots.ts`; `deploy-app.sh --restart`, no rebuild. Same for
+  `GOOGLE_SITE_VERIFICATION` (Search Console's HTML-tag value, for a URL-prefix property).
 - Backups: `backup.sh` from the site user's crontab at 02:30 (the VPS clock is Colombo time):
   `pg_dump -Fc` kept 14 days, a photo tarball kept 3, files mode 600.
 
@@ -349,6 +351,20 @@ elements, pointed-oval seed logo.
   reported) is logged as `seen`, hidden and not counted as a problem.
 - The test-mode sales table refreshes itself once (`RefreshSoon`) while a sale is still
   "Arriving…": the worker imports it after the action has already revalidated.
+- **Maintenance mode** (admin Settings → Website, Setting `maintenance`, `loadMaintenance`):
+  `apps/web/src/proxy.ts` answers every page with a self-contained 503 page (`lib/maintenance.ts`:
+  inline CSS, Google Fonts, the mark via `markSvg()`, WhatsApp and email once the contact row
+  exists) and the API with 503 JSON; `Retry-After`, `X-Robots-Tag: noindex`. The matcher lets
+  through `_next/`, `media/`, `api/health`, the PayHere notify, the Beds24 webhook, icons,
+  `robots.txt` and `sitemap.xml`. The web reads the setting at most every 5 s. The admin shows
+  a banner on every page while it is on.
+- **SEO** (`lib/seo.ts`): every page's metadata comes from `pageMeta()` (title, description,
+  canonical, Open Graph and Twitter card with a photo from the database), because a page that
+  sets `openGraph` replaces the layout's whole. `app/sitemap.ts` lists the public pages and the
+  rooms with their photos (`/book` and checkout stay out); `robots.ts` points at it. The
+  `LodgingBusiness` JSON-LD carries photos and the Maps link; `HotelRoom` its photos.
+- The client's "Preview: prices and contact details are placeholders" notice was removed
+  (Nov 2026): the client now manages both in the admin.
 - Totals and amounts charged show cents (`exact` in `formatMoney`, `<Price exact>`), so the
   page matches the card statement. Nightly prices stay rounded.
 
@@ -476,8 +492,6 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
 - The parallax wrapper inside `.pillar__img` is styled as `> [data-parallax]`, not `> span`: the
   "Beach photo to come" label is a span too, and the bare selector stretched its linen
   background over the whole photo (the Beyond card looked washed out).
-- The preview notice is rendered `hidden`; `initBadge` shows it unless `localStorage`
-  `vy-badge` is `off`, so a closed notice stays closed across visits without a flash.
 - `aspect-ratio` does nothing on an inline element — the room card image wrapper is a `<span>` and
   needs `display: block`.
 - Images inside an aspect-ratio box need `width/height: 100%; object-fit: cover`, or the box grows
@@ -509,9 +523,8 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
 
 ## Remind the owner
 
-- **Search engines (asked 2026-10-06):** the live site is still `noindex` with `Disallow: /`.
-  Bring it up at the start of each session until it's done: once the client confirms real
-  prices, set `SITE_INDEXABLE=1` in the server's `.env` and run `scripts/deploy-app.sh --restart`.
+- **Search Console (2026-11-08):** check that `https://vyonaweligama.com/sitemap.xml` was
+  submitted and reads as "Success", until the owner confirms it.
 
 ## Waiting on the client
 

@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
-import { loadContact, loadSettings, MIN_PASSWORD, SOCIAL_LABELS, SOCIALS } from '@vyona/core';
+import { loadContact, loadMaintenance, loadSettings, MIN_PASSWORD, SOCIAL_LABELS, SOCIALS } from '@vyona/core';
 import { ActionForm, Submit } from '@/components/ActionForm';
 import { requireAdmin } from '@/lib/session';
 import { signOut } from '../../login/actions';
-import { saveContact, savePassword, saveSettings } from './actions';
+import { saveContact, saveMaintenance, savePassword, saveSettings } from './actions';
 
 export const metadata: Metadata = { title: 'Settings' };
 
 export default async function SettingsPage() {
   const admin = await requireAdmin();
-  const [s, c] = await Promise.all([loadSettings(), loadContact()]);
+  const [s, c, maintenance] = await Promise.all([loadSettings(), loadContact(), loadMaintenance()]);
 
   return (
     <>
@@ -21,6 +21,26 @@ export default async function SettingsPage() {
           </h1>
         </div>
       </div>
+
+      <ActionForm action={saveMaintenance} className="stack">
+        <section className="card" id="maintenance">
+          <h2 className="card__title">Website</h2>
+          <label className="check">
+            <input type="checkbox" name="maintenance" defaultChecked={maintenance} />
+            <span>
+              Maintenance mode
+              <span className="field__hint">
+                Visitors see “The website is under maintenance. Please try again later. Thank you for your patience.”
+                instead of the website, with your WhatsApp and email. Bookings and payments already under way, and
+                Booking.com, keep working. This admin works as usual.
+              </span>
+            </span>
+          </label>
+          <div className="actions">
+            <Submit busy="Saving…">Save</Submit>
+          </div>
+        </section>
+      </ActionForm>
 
       <ActionForm action={saveSettings} className="stack">
         <section className="card">

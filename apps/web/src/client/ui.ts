@@ -1,5 +1,4 @@
-// Small DOM helpers shared by the client modules: toast, scroll lock,
-// prototype badge and the lazy map.
+// Small DOM helpers shared by the client modules: toast, scroll lock and the lazy map.
 
 export const $ = <T extends Element = HTMLElement>(s: string, r: ParentNode = document) => r.querySelector<T>(s);
 export const $$ = <T extends Element = HTMLElement>(s: string, r: ParentNode = document) => [...r.querySelectorAll<T>(s)];
@@ -18,28 +17,6 @@ let locks = 0;
 export function lockScroll(on: boolean) {
   locks = Math.max(0, locks + (on ? 1 : -1));
   document.body.classList.toggle('is-locked', locks > 0);
-}
-
-// The preview notice starts hidden, so a visitor who closed it never sees it flash on the next
-// page; closing it holds in this browser across visits.
-export function initBadge() {
-  const badge = $('[data-proto-badge]');
-  if (!badge) return;
-  let closed = false;
-  try {
-    closed = localStorage.getItem('vy-badge') === 'off';
-  } catch {
-    /* storage unavailable */
-  }
-  badge.hidden = closed;
-  $('[data-proto-close]', badge)?.addEventListener('click', () => {
-    badge.hidden = true;
-    try {
-      localStorage.setItem('vy-badge', 'off');
-    } catch {
-      /* storage unavailable */
-    }
-  });
 }
 
 /**

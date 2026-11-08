@@ -6,6 +6,7 @@ import {
   CONTACT_KEY,
   DEFAULT_SETTINGS,
   followMapLink,
+  MAINTENANCE_KEY,
   MIN_PASSWORD,
   normaliseBookingComUrl,
   parseMapLink,
@@ -64,6 +65,20 @@ export async function saveSettings(_prev: Result, fd: FormData): Promise<Result>
     await syncRates();
     revalidatePath('/', 'layout');
     return ok('Saved. The website uses the new settings straight away.');
+  });
+}
+
+export async function saveMaintenance(_prev: Result, fd: FormData): Promise<Result> {
+  await requireAdmin();
+  const on = fd.get('maintenance') === 'on';
+  return attempt(async () => {
+    await prisma.setting.upsert({ where: { key: MAINTENANCE_KEY }, create: { key: MAINTENANCE_KEY, value: on }, update: { value: on } });
+    revalidatePath('/', 'layout');
+    return ok(
+      on
+        ? 'Maintenance mode is on. Within a few seconds, visitors see the maintenance page instead of the website.'
+        : 'Maintenance mode is off. The website is open to visitors again.',
+    );
   });
 }
 

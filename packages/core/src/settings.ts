@@ -53,6 +53,14 @@ export function externalBookingUrl(s: Pick<BookingSettings, 'onlineBooking' | 'b
   return normaliseBookingComUrl(s.bookingComUrl);
 }
 
+/** While on, the public website answers every page with a maintenance page (503); the admin works as usual. */
+export const MAINTENANCE_KEY = 'maintenance';
+
+export async function loadMaintenance(db: Pick<typeof prisma, 'setting'> = prisma): Promise<boolean> {
+  const row = await db.setting.findUnique({ where: { key: MAINTENANCE_KEY } });
+  return row?.value === true;
+}
+
 type Db = Pick<typeof prisma, 'setting' | 'rateRule'>;
 
 export async function loadSettings(db: Db = prisma): Promise<BookingSettings> {

@@ -664,7 +664,7 @@ hr { border: 0; margin: 0; }
 .footer__legal { grid-column: 1 / -1; margin: 0; font-family: var(--sans); font-size: 0.66rem; letter-spacing: 0.1em; color: var(--taupe); text-align: center; }
 
 /* ==========================================================================
-   Overlays: drawer, dialogs, toast, badge, cursor
+   Overlays: drawer, dialogs, toast, cursor
    ========================================================================== */
 .drawer { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; }
 .drawer[hidden] { display: none; }
@@ -718,19 +718,6 @@ dialog::backdrop { background: rgb(28 28 20 / 0.6); backdrop-filter: blur(4px); 
   transform: translate3d(-50%, 150%, 0); opacity: 0; transition: transform 0.6s var(--ease), opacity 0.6s var(--ease); pointer-events: none;
 }
 .toast.is-on { transform: translate3d(-50%, 0, 0); opacity: 1; }
-
-.proto-badge {
-  position: fixed; left: 1rem; bottom: 1rem; z-index: 70; max-width: 330px;
-  display: flex; gap: 0.6rem; align-items: flex-start;
-  padding: 0.7rem 0.6rem 0.7rem 1rem; border-radius: 12px; background: rgb(250 247 241 / 0.94); backdrop-filter: blur(8px);
-  border: 1px solid rgb(168 139 94 / 0.4); box-shadow: var(--shadow);
-  font-family: var(--sans); font-size: 0.72rem; line-height: 1.45; color: var(--taupe);
-}
-.proto-badge strong { color: var(--bronze); letter-spacing: 0.18em; text-transform: uppercase; font-weight: 500; margin-right: 0.3rem; }
-.proto-badge .icon-btn { width: 32px; height: 32px; flex: none; }
-.proto-badge[hidden] { display: none; }
-.proto-badge p { margin: 0; }
-.proto-badge__short { display: none; }
 
 /* Shown under an email link when no mail app took it (client/mail.ts) */
 .mail-help {
@@ -920,9 +907,6 @@ dialog::backdrop { background: rgb(28 28 20 / 0.6); backdrop-filter: blur(4px); 
   .book-bar p { margin: 0; font-size: 1rem; }
   .book-bar strong { font-weight: 500; font-size: 1.3rem; }
   .book-bar__from { font-family: var(--sans); font-size: 0.64rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--taupe); }
-  .proto-badge { top: calc(var(--nav-h, 72px) + 0.6rem); bottom: auto; align-items: center; padding: 0.3rem 0.3rem 0.3rem 0.9rem; border-radius: 999px; max-width: calc(100vw - 2rem); }
-  .proto-badge__long { display: none; }
-  .proto-badge__short { display: inline; }
   .drawer { place-items: end stretch; }
   .drawer__sheet { width: 100%; max-height: 92svh; border-radius: 22px 22px 0 0; padding-top: 2.6rem; animation: sheet 0.55s var(--ease); padding-bottom: calc(1.4rem + env(safe-area-inset-bottom)); }
   .drawer__grip { display: block; position: absolute; left: 50%; top: 10px; width: 44px; height: 4px; margin-left: -22px; border-radius: 4px; background: rgb(43 42 38 / 0.2); }

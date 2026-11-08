@@ -46,6 +46,11 @@ function a11y(title?: string) {
   return title ? { role: 'img', 'aria-label': title } : { 'aria-hidden': true as const };
 }
 
+/** The seed mark as plain SVG markup, for pages rendered without React (the maintenance page). */
+export function markSvg(attrs = '') {
+  return `<svg viewBox="351 238 312 277" fill="currentColor" aria-hidden="true" ${attrs}><g transform="${FLIP}">${MARK.map((d) => `<path d="${d}"/>`).join('')}</g></svg>`;
+}
+
 /** The seed mark on its own. */
 export function Mark({ className, title }: Props) {
   return (

@@ -10,13 +10,16 @@ import { Cta } from '@/components/sections/Cta';
 import { PageHero } from '@/components/sections/Hero';
 import { EVERY_ROOM, SHOW_DRAFT_PAGES } from '@/lib/content';
 import { getRooms, roomSpecs, roomTitle } from '@/lib/site';
+import { pageMeta } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'Stay',
-  description:
-    'Seven rooms, each with a nature of its own: two spacious studios and five king rooms among the palms in Weligama, Sri Lanka.',
-  alternates: { canonical: '/stay' },
-};
+export const generateMetadata = (): Promise<Metadata> =>
+  pageMeta({
+    title: 'Stay',
+    description:
+      'Seven rooms, each with a nature of its own: two spacious studios and five king rooms among the palms in Weligama, Sri Lanka.',
+    path: '/stay',
+    photo: 'studio-garden',
+  });
 
 export default async function StayPage() {
   const rooms = await getRooms();

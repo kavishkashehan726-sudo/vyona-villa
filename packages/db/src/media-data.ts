@@ -10,7 +10,7 @@ export const PHOTOS: Record<string, PhotoSource> = {
   'hero-pool-cottage': { file: "2026-11/IMG_6470.jpeg", alt: "The pool and sun loungers beside the garden cottage", hero: true },
   'hero-pool-aerial': { file: "2026-11/2256686320..jpg", alt: "The pool and the roofs from above, ringed by trees", hero: true },
   'hero-house': { file: "2026-11/IMG_6469.jpeg", alt: "The cottage verandah behind a coconut palm", hero: true },
-  'pool-loungers': { file: "WhatsApp Image 2026-09-22 at 9.10.19 PM (2).jpeg", alt: "Loungers along the pool" },
+  'pool-loungers': { file: "2026-11/IMG_6470-pool.jpg", alt: "Loungers along the pool", hero: true },
   'pool-deck': { file: "WhatsApp Image 2026-09-22 at 9.10.19 PM (1).jpeg", alt: "Loungers on the pool deck" },
   'pool-long': { file: "WhatsApp Image 2026-09-22 at 9.09.54 PM.jpeg", alt: "The length of the pool at midday" },
   'pool-swimmer': { file: "WhatsApp Image 2026-09-22 at 9.09.59 PM.jpeg", alt: "A guest swimming in the pool" },

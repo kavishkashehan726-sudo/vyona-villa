@@ -5,12 +5,16 @@ import { Cta } from '@/components/sections/Cta';
 import { PageHero } from '@/components/sections/Hero';
 import { Story } from '@/components/sections/Story';
 import { ABOUT, SHOW_DRAFT_PAGES } from '@/lib/content';
+import { pageMeta } from '@/lib/seo';
 
-export const metadata: Metadata = {
-  title: 'About',
-  description: 'How VYONA began, the people who host it, the kitchen and the Weligama community around it.',
-  alternates: { canonical: '/about' },
-};
+export const generateMetadata = (): Promise<Metadata> =>
+  pageMeta({
+    title: 'About',
+    description:
+      'How VYONA began, the people who host it, the kitchen and the Weligama community around it.',
+    path: '/about',
+    photo: 'door-statue',
+  });
 
 export default function AboutPage() {
   if (!SHOW_DRAFT_PAGES) notFound();

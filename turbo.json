@@ -14,7 +14,8 @@
     "PAYHERE_*",
     "BEDS24_*",
     "ADMIN_*",
-    "SITE_INDEXABLE"
+    "SITE_INDEXABLE",
+    "GOOGLE_SITE_VERIFICATION"
   ],
   "tasks": {
     "generate": {

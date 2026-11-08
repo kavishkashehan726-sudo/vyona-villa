@@ -41,12 +41,19 @@ export const getContact = cache(() => loadContact());
 /** Inlines JSON in a <script> without letting "</script>" in the data close it. */
 export const jsonScript = (data: unknown) => JSON.stringify(data).replace(/</g, '\\u003c');
 
+/** Photos named in the villa's structured data (Google shows them with the listing). */
+const LD_PHOTOS = ['hero-pool-cottage', 'hero-pool-aerial', 'hero-house', 'room-dhara', 'room-agni', 'dining-hall'];
+
 export function lodgingJsonLd(
   rooms: RoomData[],
   settings: { checkInTime: string; checkOutTime: string },
   contact: ContactDetails,
+  photos: Record<string, { src: string }>,
 ) {
   const geo = mapCoords(contact.mapQuery);
+  const image = LD_PHOTOS.map((k) => photos[k]?.src)
+    .filter((src): src is string => !!src)
+    .map((src) => `${SITE_URL}${src}`);
   const sameAs = Object.values(contact.social).filter(Boolean);
   return {
     '@context': 'https://schema.org',
@@ -58,6 +65,8 @@ export function lodgingJsonLd(
     slogan: 'Your home on the South Coast. Naturally.',
     numberOfRooms: rooms.length,
     priceRange: '$$',
+    ...(image.length > 0 && { image }),
+    ...(contact.mapLink && { hasMap: contact.mapLink }),
     telephone: contact.phone,
     email: contact.email,
     address: {

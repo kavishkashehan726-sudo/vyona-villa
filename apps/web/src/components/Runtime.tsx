@@ -12,7 +12,6 @@ import { watchImages } from '@/client/images';
 import { initMagnetic } from '@/client/magnetic';
 import { initMail } from '@/client/mail';
 import { initRipple } from '@/client/ripple';
-import { initBadge } from '@/client/ui';
 
 let started = false;
 
@@ -25,7 +24,6 @@ export function Runtime() {
     html.classList.toggle('is-lite', cap.low);
     html.classList.toggle('is-reduced', cap.reduced);
     watchImages();
-    initBadge();
     initBooking();
     initMail();
     if (cap.cursor) {

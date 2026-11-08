@@ -7,6 +7,7 @@ import { Cta } from '@/components/sections/Cta';
 import { PageHero } from '@/components/sections/Hero';
 import { Story } from '@/components/sections/Story';
 import { PILLARS, pillarBySlug, SHOW_DRAFT_PAGES } from '@/lib/content';
+import { pageMeta } from '@/lib/seo';
 
 export function generateStaticParams() {
   return SHOW_DRAFT_PAGES ? PILLARS.map((p) => ({ pillar: p.slug })) : [];
@@ -15,7 +16,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps<'/explore/[pillar]'>): Promise<Metadata> {
   const p = pillarBySlug((await params).pillar);
   if (!p) return {};
-  return { title: p.title, description: `${p.tag} ${p.body}`, alternates: { canonical: `/explore/${p.slug}` } };
+  return pageMeta({ title: p.title, description: `${p.tag} ${p.body}`, path: `/explore/${p.slug}`, photo: p.photo });
 }
 
 export default async function PillarPage({ params }: PageProps<'/explore/[pillar]'>) {
