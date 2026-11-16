@@ -377,7 +377,9 @@ elements, pointed-oval seed logo.
   room 5; they went to Vayu (3), whose own photos show the same high window. The two bathroom
   shots went to Agni and Soma by their timestamps.
 - The fourth home hero slide is the drone shot `2026-11/DJI_0110.jpg` (`hero-drone`, Nov 2026), in
-  place of the verandah at night (`hero-night`, which stays in the gallery).
+  place of the verandah at night (`hero-night`, which stays in the gallery). The fifth is the
+  beach at sunset (`beach-sunset`, also in the Beyond VYONA column).
+- The "Your stay at VYONA" section has no mark over its photo (client, Nov 2026).
 - Rooms, from the client's brief (`packages/db/src/seed-data.ts`): 1 Dhara (earth), 2 Jala
   (water), 3 Vayu (air), 4 Agni (fire), 5 Soma (moon), 6 Surya (sun), 7 Tara (star). **Vyoma is
   dropped.** Two 26 m² studios at $95 and five king rooms at $50–$75. Room cards read

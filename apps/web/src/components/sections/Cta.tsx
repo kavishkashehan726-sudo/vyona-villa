@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { externalBookingUrl } from '@vyona/core';
-import { Icon, Mark, Palm } from '@vyona/ui';
+import { Icon, Palm } from '@vyona/ui';
 import { getSettings } from '@/lib/site';
 import { Photo } from '../Photo';
 
@@ -34,7 +34,6 @@ export async function Cta() {
       </div>
       <figure className="cta__img">
         <Photo k="bed-lamp" alt="" />
-        <Mark className="cta__mark" />
       </figure>
     </section>
   );
