@@ -59,6 +59,7 @@ export const PHOTOS: Record<string, PhotoSource> = {
   // The photographer's set (Nov 2026), from the client's folders by room.
   'hero-night': { file: "2026-11/DSC01877.jpg", alt: "The cottage verandah lit up at night", hero: true },
   'house-aerial': { file: "2026-11/26263262.jpg", alt: "VYONA among the trees, from above", hero: true },
+  'hero-drone': { file: "2026-11/DJI_0110.jpg", alt: "VYONA from straight above: the pool, the roofs and the lotus pond among the trees", hero: true },
   'studio-garden': { file: "2026-11/IMG_6465.jpeg", alt: "A studio: two beds, the kitchen and the garden door", hero: true },
   'studio-kitchen': { file: "2026-11/DSC01358.jpg", alt: "A studio’s king bed and kitchen" },
   'studio-evening': { file: "2026-11/DSC01881.jpg", alt: "A studio in the evening, under the timber roof" },
