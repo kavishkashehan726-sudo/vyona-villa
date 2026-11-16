@@ -496,6 +496,9 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
   needs `display: block`.
 - Images inside an aspect-ratio box need `width/height: 100%; object-fit: cover`, or the box grows
   to the photo's natural height.
+- The room dialog's photos are a wrapping flexbox (wide first photo, then pairs, scrolling), not a
+  fixed grid: a grid built for three photos overlapped rooms with four, and grid sizes an auto row
+  before it knows a spanning `aspect-ratio` image's width. Flex items need `min-width: 0`.
 - Day cells in the calendar carry `data-day` as **epoch day numbers**, not ISO dates.
 - Hover styles must not override `.is-start` / `.is-end` in the calendar.
 - The first client photos (`images/WhatsApp Image …`) are WhatsApp-compressed to ~1200px. The
