@@ -28,7 +28,7 @@ export default async function Home() {
       <Explore />
       <Amenities />
       <Statement />
-      <Gallery limit={12} />
+      <Gallery limit={17} />
       <Booking />
       <Contact />
       <Cta />

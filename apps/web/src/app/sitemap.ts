@@ -21,7 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   });
 
   return [
-    page('/', 1, ['hero-pool-cottage', 'hero-house', 'hero-pool-aerial', 'hero-night']),
+    page('/', 1, ['hero-pool-cottage', 'hero-house', 'hero-pool-aerial', 'hero-drone']),
     page('/stay', 0.9, ['studio-garden', ...rooms.map((r) => r.photos[0] ?? '')]),
     ...rooms.map((r) => page(`/stay/${r.slug}`, 0.8, r.photos)),
     page('/gallery', 0.7, GALLERY.map(([k]) => k)),

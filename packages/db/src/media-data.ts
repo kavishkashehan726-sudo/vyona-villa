@@ -59,6 +59,7 @@ export const PHOTOS: Record<string, PhotoSource> = {
   // The photographer's set (Nov 2026), from the client's folders by room.
   'hero-night': { file: "2026-11/DSC01877.jpg", alt: "The cottage verandah lit up at night", hero: true },
   'house-aerial': { file: "2026-11/26263262.jpg", alt: "VYONA among the trees, from above", hero: true },
+  'hero-drone': { file: "2026-11/DJI_0110.jpg", alt: "VYONA from straight above: the pool, the roofs and the lotus pond among the trees", hero: true },
   'studio-garden': { file: "2026-11/IMG_6465.jpeg", alt: "A studio: two beds, the kitchen and the garden door", hero: true },
   'studio-kitchen': { file: "2026-11/DSC01358.jpg", alt: "A studio’s king bed and kitchen" },
   'studio-evening': { file: "2026-11/DSC01881.jpg", alt: "A studio in the evening, under the timber roof" },
@@ -72,6 +73,8 @@ export const PHOTOS: Record<string, PhotoSource> = {
   'bath-towels': { file: "2026-11/DSC01815.jpg", alt: "The basin and mirror in an en-suite" },
   'soma-lamp': { file: "2026-11/DSC01866.jpg", alt: "Soma’s bed by lamplight" },
   'soma-night': { file: "2026-11/DSC01818.jpg", alt: "Soma in the evening, through the glass" },
+  'bed-lamp': { file: "2026-11/crop.jpg", alt: "A made bed and a lit lamp, seen through the glass" },
+  'pool-reading': { file: "2026-11/DSC01708.jpg", alt: "Reading on a lounger by the pool" },
   'surya-view': { file: "2026-11/IMG_4548.JPG.jpg", alt: "Surya’s bed and the palms outside" },
   'surya-wide': { file: "2026-11/PHOTO-2026-10-25-14-17-14_1.jpg", alt: "Surya, windows on three sides" },
   'tara-view': { file: "2026-11/IMG_4568.JPG.jpg", alt: "The window seat in Tara, over the paddy fields" },
