@@ -33,7 +33,7 @@ export async function Cta() {
         </Link>
       </div>
       <figure className="cta__img">
-        <Photo k="room-linen" alt="" />
+        <Photo k="bed-lamp" alt="" />
         <Mark className="cta__mark" />
       </figure>
     </section>
