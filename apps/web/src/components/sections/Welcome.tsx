@@ -35,7 +35,7 @@ export function Welcome() {
         )}
       </div>
       <figure className="welcome__photo unveil">
-        <Photo k="door-statue" alt="A carved timber door beside a stone statue and a potted palm at VYONA" />
+        <Photo k="tara-evening" alt="A room at VYONA at dusk: a palm in the window, a lamp lit by the bed" />
       </figure>
       <aside className="welcome__quote reveal">
         <Palm className="welcome__quote-palm" />
