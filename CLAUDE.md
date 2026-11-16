@@ -240,7 +240,9 @@ elements, pointed-oval seed logo.
   height, unreadable below ~300px wide, so the nav, footer and admin login use `<Logo compact>`
   and set that line as text (`.brand__sub`). The full logo is in `brand/vyona-logo.svg` for
   print. The favicons are the mark on a square viewBox.
-- Client reference images are for layout only; use the real photos, with a slot for a beach shot.
+- Client reference images are for layout only; use the real photos. The Beyond VYONA column shows
+  the beach at sunset (`beach-sunset`, `2026-11/IMG_0010.jpeg`, Nov 2026); its "Beach photo to come"
+  label is gone.
 - Photos are not `next/image`: `media:import` makes WebP (1200px, q60, as the prototype) plus a
   24px LQIP on the `Media` row, `/media/…` serves them with a one-year cache, and `Photo` renders
   the prototype's blur-up `<img class="blur-img" data-img>`. Same CLS and blur, no optimiser on a
@@ -539,6 +541,6 @@ whether guests may pay at the villa (`payAtVilla`), the PayHere charge currency 
 Tara's keywords, whether the Booking.com rate is the nightly rate or includes
 the service charge or a markup, the Beds24 room ids (and a check of blackout against the real
 account), About copy and host photos, Explore subpage copy (both pages blocked until then), the
-real phone, email and social links (the owner enters them in admin Settings), high-res photos (beach, food, video), PayHere merchant account, Beds24
+real phone, email and social links (the owner enters them in admin Settings), high-res photos (food, video), PayHere merchant account, Beds24
 account, SMTP provider, tax and service-charge rules, check-in/out times, cancellation policy.
 Placeholders are marked on the page; nothing blocks on these.
