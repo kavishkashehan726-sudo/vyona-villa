@@ -649,7 +649,6 @@ hr { border: 0; margin: 0; }
 .cta__text p { color: var(--taupe); margin-bottom: 1.8rem; }
 .cta__img { position: relative; }
 .cta__img img { position: absolute; inset: 0; }
-.cta__mark { position: absolute; right: 18%; top: 50%; width: 90px; height: 66px; margin-top: -33px; color: #6a5230; opacity: 0.75; }
 
 .footer {
   display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1.6rem 3rem;
