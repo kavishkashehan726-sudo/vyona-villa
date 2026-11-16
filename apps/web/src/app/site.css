@@ -685,13 +685,20 @@ hr { border: 0; margin: 0; }
 dialog { margin: auto; border: 0; padding: 0; color: var(--ink); }
 dialog::backdrop { background: rgb(28 28 20 / 0.6); backdrop-filter: blur(4px); }
 .room-dialog {
-  width: min(1100px, calc(100% - 2rem)); max-height: calc(100svh - 2rem); border-radius: 20px; background: var(--linen); overflow: hidden;
+  width: min(1100px, calc(100% - 2rem)); height: min(720px, calc(100svh - 2rem)); max-height: calc(100svh - 2rem);
+  border-radius: 20px; background: var(--linen); overflow: hidden;
 }
-.room-dialog[open] { display: grid; grid-template-columns: 1.1fr 1fr; animation: pop 0.55s var(--ease); }
-.room-dialog__media { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 2fr 1fr; gap: 4px; min-height: 0; max-height: calc(100svh - 2rem); }
-.room-dialog__media { overflow: hidden; }
-.room-dialog__media img { width: 100%; height: 100%; min-height: 0; object-fit: cover; }
-.room-dialog__media img:first-child { grid-column: 1 / -1; }
+.room-dialog[open] { display: grid; grid-template-columns: 1.1fr 1fr; grid-template-rows: minmax(0, 1fr); animation: pop 0.55s var(--ease); }
+/* Any number of photos: a wide first photo, then pairs; the column scrolls when they don't fit.
+   Each photo gets its own aspect box. Wrapping flex, not grid: grid sizes an auto row before it
+   knows a spanning photo's width, and the full-width photo then overlapped the pair below it. */
+.room-dialog__media {
+  display: flex; flex-wrap: wrap; align-content: flex-start; gap: 4px; min-height: 0;
+  overflow-y: auto; overscroll-behavior: contain;
+}
+.room-dialog__media img { display: block; flex: 0 0 calc(50% - 2px); min-width: 0; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+.room-dialog__media img:first-child,
+.room-dialog__media img:last-child:nth-child(even) { flex-basis: 100%; aspect-ratio: 3 / 2; }
 .room-dialog__body { padding: clamp(1.5rem, 4vw, 3rem); overflow-y: auto; }
 .room-dialog__body .room-card__icon { margin: 0 0 1rem; }
 .room-dialog__body .h2 { letter-spacing: 0.12em; }
@@ -867,8 +874,17 @@ dialog::backdrop { background: rgb(28 28 20 / 0.6); backdrop-filter: blur(4px); 
   .cal { grid-template-columns: minmax(0, 1fr); }
   .cal > :nth-child(2) { display: none; }
   .contact { grid-template-columns: 1fr; }
-  .room-dialog[open] { grid-template-columns: 1fr; overflow-y: auto; }
-  .room-dialog__media { max-height: none; height: min(90vw, 520px); flex: none; }
+  .room-dialog { height: auto; }
+  .room-dialog[open] { grid-template-columns: 1fr; grid-template-rows: none; overflow-y: auto; }
+  /* One row of photos that swipes sideways. */
+  .room-dialog__media {
+    flex-wrap: nowrap; height: min(75vw, 460px); overflow: auto hidden; overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+  }
+  .room-dialog__media img,
+  .room-dialog__media img:first-child,
+  .room-dialog__media img:last-child:nth-child(even) { flex: 0 0 88%; height: 100%; aspect-ratio: auto; scroll-snap-align: start; }
+  .room-dialog__media img:only-child { flex-basis: 100%; }
   .room-dialog__body { overflow: visible; }
 }
 @media (max-width: 900px) {
