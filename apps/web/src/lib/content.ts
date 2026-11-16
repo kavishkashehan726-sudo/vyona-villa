@@ -104,10 +104,9 @@ export const PILLARS: Pillar[] = [
     tag: "There's more out there.",
     body: 'The beach is only the beginning. Weligama, the southern coast and a Sri Lanka worth taking your time over.',
     link: 'Explore Beyond VYONA',
-    photo: 'beach-hat',
-    alt: 'A sun hat, ready for the beach',
+    photo: 'beach-sunset',
+    alt: 'Sunset on Weligama beach, surfers and swimmers at the water’s edge',
     depth: 0.1,
-    slot: 'Beach photo to come',
     story: [
       {
         photo: 'beach-hat',

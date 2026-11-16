@@ -73,6 +73,7 @@ export const PHOTOS: Record<string, PhotoSource> = {
   'bath-towels': { file: "2026-11/DSC01815.jpg", alt: "The basin and mirror in an en-suite" },
   'soma-lamp': { file: "2026-11/DSC01866.jpg", alt: "Soma’s bed by lamplight" },
   'soma-night': { file: "2026-11/DSC01818.jpg", alt: "Soma in the evening, through the glass" },
+  'beach-sunset': { file: "2026-11/IMG_0010.jpeg", alt: "Sunset on Weligama beach, surfers and swimmers at the water’s edge", hero: true },
   'bed-lamp': { file: "2026-11/crop.jpg", alt: "A made bed and a lit lamp, seen through the glass" },
   'pool-reading': { file: "2026-11/DSC01708.jpg", alt: "Reading on a lounger by the pool" },
   'surya-view': { file: "2026-11/IMG_4548.JPG.jpg", alt: "Surya’s bed and the palms outside" },
