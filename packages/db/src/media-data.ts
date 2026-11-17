@@ -84,5 +84,7 @@ export const PHOTOS: Record<string, PhotoSource> = {
   'dining-view': { file: "2026-11/DSC01739.jpg", alt: "A table on the terrace, looking into the trees" },
   'rice-curry': { file: "2026-11/DSC01407.jpg", alt: "Rice and curry in clay bowls" },
   'breakfast-spread': { file: "2026-11/PHOTO-2026-10-25-14-17-14_12.jpg", alt: "Fruit, salad and fresh juice on the table" },
+  'breakfast-bowls': { file: "2026-11/PHOTO-2026-10-25-14-17-14_10.jpg", alt: "Fruit with yoghurt and granola, a mango bowl and a salad on the table" },
+  'breakfast-porridge': { file: "2026-11/PHOTO-2026-10-25-14-17-14_14.jpg", alt: "Porridge with banana, dates and seeds, a fruit bowl beside it" },
   'pool-lounger': { file: "2026-11/DSC01550.jpg", alt: "Fresh juice beside a lounger in the garden" },
 };
