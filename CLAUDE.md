@@ -32,6 +32,9 @@ The full system is specified in [docs/booking-engine-spec.md](docs/booking-engin
 - Everything in the frontend guide is implemented in the prototype. Don't drop an effect when
   refactoring; see the checklist below.
 
+- **No pull requests** (owner, Nov 2026): commit straight to `main`, push, and deploy once CI
+  is green.
+
 ## Layout
 
 ```
@@ -377,8 +380,9 @@ elements, pointed-oval seed logo.
   room 5; they went to Vayu (3), whose own photos show the same high window. The two bathroom
   shots went to Agni and Soma by their timestamps.
 - The fourth home hero slide is the drone shot `2026-11/DJI_0110.jpg` (`hero-drone`, Nov 2026), in
-  place of the verandah at night (`hero-night`, which stays in the gallery). The fifth is the
-  beach at sunset (`beach-sunset`, also in the Beyond VYONA column).
+  place of the verandah at night (`hero-night`, which stays in the gallery). The beach at sunset
+  (`beach-sunset`) was a fifth slide for a day; the client wants it only in the Beyond VYONA
+  column (Nov 2026), so the hero shows the villa alone.
 - The "Your stay at VYONA" section has no mark over its photo (client, Nov 2026).
 - Rooms, from the client's brief (`packages/db/src/seed-data.ts`): 1 Dhara (earth), 2 Jala
   (water), 3 Vayu (air), 4 Agni (fire), 5 Soma (moon), 6 Surya (sun), 7 Tara (star). **Vyoma is
@@ -519,6 +523,12 @@ Prototype paths are under `prototype/src/js/`; web paths under `apps/web/src/cli
   the email the same day and the registry went back to Cloudflare. Check the registry, not the
   local resolver, which kept a stale answer: `dig +noall +authority NS vyonaweligama.com
   @a.gtld-servers.net`.
+- **Each deploying PC needs its own key on the server.** When the Windows PC's key was added in
+  CloudPanel (Nov 2026), the Linux PC's `~/.ssh/vyona_deploy` stopped working ("Permission
+  denied (publickey)") until it was added again. Add a key next to the others, never in place.
+- CI's `pnpm build` downloads the Google fonts (`next/font/google`). When Google's font servers
+  fail it, the error is "Can't resolve '@vercel/turbopack-next/internal/font/google/font'"; it is
+  not the code. `gh run rerun <id> --failed` (on 2026-11-16 it took two re-runs).
 - **Deploying from Windows (Git Bash)** works: Git Bash has no rsync, so `deploy-app.sh` sends the
   three deploy files through `ssh … cat` with CRs stripped and falls back to tar over ssh for
   `--images`/`--backups`. `deploy.env` is read with CRs stripped; `.gitattributes` keeps scripts LF.
