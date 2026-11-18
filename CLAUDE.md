@@ -386,8 +386,10 @@ elements, pointed-oval seed logo.
 - The "Your stay at VYONA" section has no mark over its photo (client, Nov 2026).
 - Gallery (client, 2026-11-17): the breakfast over the paddy fields (`breakfast-view`) is out; two
   new breakfast photos (`breakfast-bowls` takes its place as the home page's 17th,
-  `breakfast-porridge`) plus `hero-drone`, `soma-night` and `tara-evening` are in. The last two
-  and the drone shot sit below the home page's 17, since the home page already shows them.
+  `breakfast-porridge`) plus `hero-drone`, `soma-night` and `tara-evening` are in.
+  The client's four (2026-11-18) open the gallery, on the home page and /gallery: `soma-lamp`,
+  `soma-night`, `tara-evening`, `hero-drone`. That pushed `dining-view`, `surya-view` and
+  `breakfast-bowls` off the home page's 17 (still on /gallery).
 - Rooms, from the client's brief (`packages/db/src/seed-data.ts`): 1 Dhara (earth), 2 Jala
   (water), 3 Vayu (air), 4 Agni (fire), 5 Soma (moon), 6 Surya (sun), 7 Tara (star). **Vyoma is
   dropped.** Two 26 m² studios at $95 and five king rooms at $50–$75. Room cards read
